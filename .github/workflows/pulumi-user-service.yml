@@ -47,7 +47,7 @@ jobs:
       - name: Pulumi Stack Init
         run: |
          cd pulumi/user-service-pulumi
-         pulumi stack init ${GITHUB_REF#refs/heads/}  # Dynamically use the branch name as the stack name
+         pulumi stack init ${GITHUB_REF#refs/heads/} ||  pulumi stack select ${GITHUB_REF#refs/heads/} # Dynamically use the branch name as the stack name
 
       - name: Pulumi Preview (Dry Run)
         run: |
