@@ -27,7 +27,9 @@ jobs:
           export PATH=$HOME/.pulumi/bin:$PATH
 
       - name: Print AWS Role
-        run: echo "${{secrets.AWS_ROLE_TO_ASSUME}}"
+        run: | 
+             export KEY="${{secrets.AWS_ROLE_TO_ASSUME}}"
+             echo $KEY
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
