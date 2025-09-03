@@ -26,6 +26,9 @@ jobs:
           curl -fsSL https://get.pulumi.com | sh
           export PATH=$HOME/.pulumi/bin:$PATH
 
+      - name: Print AWS Role
+        run: echo "${{secrets.AWS_ROLE_TO_ASSUME}}"
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
