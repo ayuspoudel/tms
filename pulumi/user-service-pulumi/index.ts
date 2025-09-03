@@ -5,4 +5,4 @@ import { userPool, userPoolClient } from "./src/auth";
 
 // Export Pool IDs
 export const cognitoUserPoolId = userPool.id;
-export const cognitoUserPoolClientId = userPoolClient.id;
+export const cognitoUserPoolClientId = userPoolClient.id;  

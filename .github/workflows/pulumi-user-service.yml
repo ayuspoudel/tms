@@ -58,7 +58,6 @@ jobs:
     name: Pulumi Apply
     runs-on: ubuntu-latest
     needs: pulumi-plan
-    if: needs.pulumi-plan.outputs.run_pulumi == 'true'
     environment:
       name: pulumi-up  # This triggers environment protection for manual approval
     steps:
