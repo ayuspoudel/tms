@@ -17,16 +17,17 @@ jobs:
     name: Pulumi Plan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+                fetch-depth: 0
 
       - name: Set up Pulumi CLI
         run: |
           curl -fsSL https://get.pulumi.com | sh
           export PATH=$HOME/.pulumi/bin:$PATH
 
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
@@ -59,10 +60,10 @@ jobs:
           curl -fsSL https://get.pulumi.com | sh
           export PATH=$HOME/.pulumi/bin:$PATH
 
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gha-deploy-role
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
 
       - name: Set up Pulumi Access Token
@@ -92,10 +93,10 @@ jobs:
           curl -fsSL https://get.pulumi.com | sh
           export PATH=$HOME/.pulumi/bin:$PATH
 
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v1
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gha-deploy-role
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
 
       - name: Set up Pulumi Access Token
