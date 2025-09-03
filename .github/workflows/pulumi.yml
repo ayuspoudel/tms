@@ -3,10 +3,14 @@ name: Pulumi CI/CD Pipeline
 on:
   push:
     branches:
-      - 'main'  # Trigger on any push to any branch
+      - 'main'  # Trigger only on push to the main branch
+    paths:
+      - 'pulumi/user-service-pulumi/**'  # Trigger only if there are changes in the `pulumi/user-service-pulumi` folder
   pull_request:
     branches:
-      - main  # Trigger for PRs to main branch
+      - main  # Trigger for PRs to the main branch
+    paths:
+      - 'pulumi/user-service-pulumi/**'  # Trigger only if there are changes in the `pulumi/user-service-pulumi` folder
 
 jobs:
   pulumi-plan:
@@ -17,8 +21,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Pulumi CLI
-        uses: curl -fsSL https://get.pulumi.com | sh
-            export PATH=$HOME/.pulumi/bin:$PATH
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v1
@@ -32,23 +37,11 @@ jobs:
       - name: Install dependencies
         run: npm install  # or your preferred package manager (e.g., yarn)
 
-      - name: Get the changed files from the commit
-        id: changed-files
-        run: |
-          echo "Changed files in this commit:"
-          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
-          cat changed-files.txt
-          echo "::set-output name=files::$(cat changed-files.txt)"
+      - name: Pulumi Stack Init
+        run: pulumi stack init ${GITHUB_REF#refs/heads/}  # Dynamically use the branch name as the stack name
 
-      - name: Check if Pulumi folder is modified
-        id: check-pulumi-changes
-        run: |
-          if grep -q "pulumi/" <<< "${{ steps.changed-files.outputs.files }}"; then
-            echo "Pulumi folder changed. Proceeding with Pulumi plan..."
-            echo "::set-output name=run_pulumi::true"
-          else
-            echo "No changes in Pulumi folder. Skipping Pulumi plan."
-            echo "::set-output name=run_pulumi::false"
+      - name: Pulumi Preview (Dry Run)
+        run: pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
 
   pulumi-apply:
     name: Pulumi Apply
@@ -56,14 +49,15 @@ jobs:
     needs: pulumi-plan
     if: needs.pulumi-plan.outputs.run_pulumi == 'true'
     environment:
-      name: live-infra  # This triggers environment protection for manual approval
+      name: pulumi-up  # This triggers environment protection for manual approval
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Pulumi CLI
-        uses: curl -fsSL https://get.pulumi.com | sh
-            export PATH=$HOME/.pulumi/bin:$PATH
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v1
@@ -77,39 +71,26 @@ jobs:
       - name: Install dependencies
         run: npm install  # or your preferred package manager (e.g., yarn)
 
-      - name: Get the changed files from the commit
-        id: changed-files
+      - name: Run Pulumi Apply in the user-service folder
         run: |
-          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
-          cat changed-files.txt
-          echo "::set-output name=files::$(cat changed-files.txt)"
-
-      - name: Run Pulumi in the modified folder
-        run: |
-          CHANGED_FOLDER=$(grep -o 'pulumi/[^ ]*' <<< "${{ steps.changed-files.outputs.files }}")
-          echo "Changed Pulumi Folder: $CHANGED_FOLDER"
-          if [[ -d "$CHANGED_FOLDER" ]]; then
-            cd $CHANGED_FOLDER
-            pulumi stack select ${GITHUB_REF#refs/heads/}
-            pulumi up --yes
-          else
-            echo "No relevant Pulumi folder changes detected"
-            exit 0
-          fi
+          cd pulumi/user-service-pulumi
+          pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
 
   pulumi-destroy:
     name: Pulumi Destroy
     runs-on: ubuntu-latest
     needs: pulumi-apply
     environment:
-      name: destroy-infra  # This triggers environment protection for manual approval
+      name: pulumi-down  # This triggers environment protection for manual approval
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Pulumi CLI
-        uses: curl -fsSL https://get.pulumi.com | sh
-            export PATH=$HOME/.pulumi/bin:$PATH
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v1
@@ -123,22 +104,8 @@ jobs:
       - name: Install dependencies
         run: npm install  # or your preferred package manager (e.g., yarn)
 
-      - name: Get the changed files from the commit
-        id: changed-files
+      - name: Run Pulumi Destroy in the user-service folder
         run: |
-          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
-          cat changed-files.txt
-          echo "::set-output name=files::$(cat changed-files.txt)"
-
-      - name: Run Pulumi Destroy on the modified folder
-        run: |
-          CHANGED_FOLDER=$(grep -o 'pulumi/[^ ]*' <<< "${{ steps.changed-files.outputs.files }}")
-          echo "Changed Pulumi Folder: $CHANGED_FOLDER"
-          if [[ -d "$CHANGED_FOLDER" ]]; then
-            cd $CHANGED_FOLDER
-            pulumi stack select ${GITHUB_REF#refs/heads/}
-            pulumi destroy --yes
-          else
-            echo "No relevant Pulumi folder changes detected"
-            exit 0
-          fi
+          cd pulumi/user-service-pulumi
+          pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi destroy --yes --stack ${GITHUB_REF#refs/heads/}
