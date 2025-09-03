@@ -36,8 +36,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
-          audience: sts.amazonaws.com
-          id-token: true
 
       - name: Set up Pulumi Access Token
         run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
