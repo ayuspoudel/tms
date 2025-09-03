@@ -11,7 +11,10 @@ on:
       - main  # Trigger for PRs to the main branch
     paths:
       - 'pulumi/user-service-pulumi/**'  # Trigger only if there are changes in the `pulumi/user-service-pulumi` folder
-
+permissions:
+  contents: read
+  id-token: write
+  packages: write
 jobs:
   pulumi-plan:
     name: Pulumi Plan
