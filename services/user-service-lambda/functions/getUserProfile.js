@@ -16,7 +16,7 @@ module.exports = async (user_id) => {
             return {
                 statusCode: 404,
                 body: JSON.stringify({ message: 'User not found' }),
-            };
+            };  
         }
 
         return {
