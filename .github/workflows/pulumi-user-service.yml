@@ -116,8 +116,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-        cd pulumi/user-service-pulumi 
-        npm install  
+          cd pulumi/user-service-pulumi 
+          npm install  
 
       - name: Run Pulumi Destroy in the user-service folder
         run: |
