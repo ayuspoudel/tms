@@ -1,0 +1,130 @@
+name: Pulumi CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - 'main'  # Trigger only on push to the main branch
+    paths:
+      - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
+  pull_request:
+    branches:
+      - main  # Trigger for PRs to the main branch
+    paths:
+      - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+env:
+  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+  AWS_DEFAULT_REGION: us-east-1
+  AWS_REGION: us-east-1
+jobs:
+  pulumi-plan:
+    name: Pulumi Plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+                fetch-depth: 0
+
+      - name: Set up Pulumi CLI
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          cd pulumi/s3-buckets
+          npm install  
+
+      - name: Pulumi Stack Init
+        run: |
+         cd pulumi/s3-buckets
+         pulumi stack init ${GITHUB_REF#refs/heads/} ||  pulumi stack select ${GITHUB_REF#refs/heads/} # Dynamically use the branch name as the stack name
+
+      - name: Pulumi Preview (Dry Run)
+        run: |
+         cd pulumi/s3-buckets
+         pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
+
+  pulumi-apply:
+    name: Pulumi Apply
+    runs-on: ubuntu-latest
+    needs: pulumi-plan
+    environment:
+      name: pulumi-up  # This triggers environment protection for manual approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Pulumi CLI
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+            cd pulumi/s3-buckets
+            npm install  
+
+      - name: Run Pulumi Apply in the user-service folder
+        run: |
+          cd pulumi/s3-buckets
+          pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
+
+  pulumi-destroy:
+    name: Pulumi Destroy
+    runs-on: ubuntu-latest
+    needs: pulumi-apply
+    environment:
+      name: pulumi-down  # This triggers environment protection for manual approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Pulumi CLI
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=$HOME/.pulumi/bin:$PATH
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          cd pulumi/s3-buckets 
+          npm install  
+
+      - name: Run Pulumi Destroy in the user-service folder
+        run: |
+          cd pulumi/s3-buckets
+          pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi destroy --yes --stack ${GITHUB_REF#refs/heads/}

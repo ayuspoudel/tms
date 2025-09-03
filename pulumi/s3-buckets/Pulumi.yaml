@@ -1,0 +1,10 @@
+name: s3-buckets
+description: S3 Buckets for Lambda code for tms ms
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: typescript
