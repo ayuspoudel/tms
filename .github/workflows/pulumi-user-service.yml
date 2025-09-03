@@ -40,13 +40,19 @@ jobs:
         run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: npm install  # or your preferred package manager (e.g., yarn)
+        run: |
+          cd pulumi/user-service-pulumi
+          npm install  
 
       - name: Pulumi Stack Init
-        run: pulumi stack init ${GITHUB_REF#refs/heads/}  # Dynamically use the branch name as the stack name
+        run: |
+         cd pulumi/user-service-pulumi
+         pulumi stack init ${GITHUB_REF#refs/heads/}  # Dynamically use the branch name as the stack name
 
       - name: Pulumi Preview (Dry Run)
-        run: pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
+        run: |
+         cd pulumi/user-service-pulumi
+         pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
 
   pulumi-apply:
     name: Pulumi Apply
@@ -109,7 +115,9 @@ jobs:
         run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: npm install  # or your preferred package manager (e.g., yarn)
+        run: |
+        cd pulumi/user-service-pulumi 
+        npm install  
 
       - name: Run Pulumi Destroy in the user-service folder
         run: |
