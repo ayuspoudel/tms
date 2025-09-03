@@ -1,0 +1,141 @@
+name: Pulumi CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - 'main'  # Trigger on any push to any branch
+  pull_request:
+    branches:
+      - main  # Trigger for PRs to main branch
+
+jobs:
+  pulumi-plan:
+    name: Pulumi Plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Pulumi CLI
+        uses: pulumi/action-install-pulumi@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_PAT }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm install  # or your preferred package manager (e.g., yarn)
+
+      - name: Get the changed files from the commit
+        id: changed-files
+        run: |
+          echo "Changed files in this commit:"
+          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
+          cat changed-files.txt
+          echo "::set-output name=files::$(cat changed-files.txt)"
+
+      - name: Check if Pulumi folder is modified
+        id: check-pulumi-changes
+        run: |
+          if grep -q "pulumi/" <<< "${{ steps.changed-files.outputs.files }}"; then
+            echo "Pulumi folder changed. Proceeding with Pulumi plan..."
+            echo "::set-output name=run_pulumi::true"
+          else
+            echo "No changes in Pulumi folder. Skipping Pulumi plan."
+            echo "::set-output name=run_pulumi::false"
+
+  pulumi-apply:
+    name: Pulumi Apply
+    runs-on: ubuntu-latest
+    needs: pulumi-plan
+    if: needs.pulumi-plan.outputs.run_pulumi == 'true'
+    environment:
+      name: live-infra  # This triggers environment protection for manual approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Pulumi CLI
+        uses: pulumi/action-install-pulumi@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gha-deploy-role
+          aws-region: us-east-1
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm install  # or your preferred package manager (e.g., yarn)
+
+      - name: Get the changed files from the commit
+        id: changed-files
+        run: |
+          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
+          cat changed-files.txt
+          echo "::set-output name=files::$(cat changed-files.txt)"
+
+      - name: Run Pulumi in the modified folder
+        run: |
+          CHANGED_FOLDER=$(grep -o 'pulumi/[^ ]*' <<< "${{ steps.changed-files.outputs.files }}")
+          echo "Changed Pulumi Folder: $CHANGED_FOLDER"
+          if [[ -d "$CHANGED_FOLDER" ]]; then
+            cd $CHANGED_FOLDER
+            pulumi stack select ${GITHUB_REF#refs/heads/}
+            pulumi up --yes
+          else
+            echo "No relevant Pulumi folder changes detected"
+            exit 0
+          fi
+
+  pulumi-destroy:
+    name: Pulumi Destroy
+    runs-on: ubuntu-latest
+    needs: pulumi-apply
+    environment:
+      name: destroy-infra  # This triggers environment protection for manual approval
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Pulumi CLI
+        uses: pulumi/action-install-pulumi@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gha-deploy-role
+          aws-region: us-east-1
+
+      - name: Set up Pulumi Access Token
+        run: echo "PULUMI_ACCESS_TOKEN=${{ secrets.PULUMI_ACCESS_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm install  # or your preferred package manager (e.g., yarn)
+
+      - name: Get the changed files from the commit
+        id: changed-files
+        run: |
+          git diff --name-only ${{ github.sha }} ${{ github.event.before }} > changed-files.txt
+          cat changed-files.txt
+          echo "::set-output name=files::$(cat changed-files.txt)"
+
+      - name: Run Pulumi Destroy on the modified folder
+        run: |
+          CHANGED_FOLDER=$(grep -o 'pulumi/[^ ]*' <<< "${{ steps.changed-files.outputs.files }}")
+          echo "Changed Pulumi Folder: $CHANGED_FOLDER"
+          if [[ -d "$CHANGED_FOLDER" ]]; then
+            cd $CHANGED_FOLDER
+            pulumi stack select ${GITHUB_REF#refs/heads/}
+            pulumi destroy --yes
+          else
+            echo "No relevant Pulumi folder changes detected"
+            exit 0
+          fi
