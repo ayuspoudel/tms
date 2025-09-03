@@ -76,7 +76,7 @@ jobs:
       - name: Install dependencies
         run: |
             cd pulumi/user-service-pulumi
-            npm install  # or your preferred package manager (e.g., yarn)
+            npm install  
 
       - name: Run Pulumi Apply in the user-service folder
         run: |
