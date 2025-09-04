@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { Output } from "@pulumi/pulumi";
-import { createLambdaFunction, allowApiGatewayInvoke } from "./lambda";
+import { createLambdaFunction } from "./lambda";
 import { createLambdaRole } from "./iam-role";
 import { userPool } from "./cognito";
 import { userProfileTable } from "./dynamodb";
@@ -14,9 +14,6 @@ const lambdaRole = createLambdaRole(
 
 // Create the Lambda function (the code should handle all endpoints)
 const userServiceLambda = createLambdaFunction("userServiceLambda", lambdaRole);
-
-// Allow API Gateway to invoke Lambda
-allowApiGatewayInvoke(userServiceLambda);
 
 // Create REST API Gateway
 export const userServiceApi = new aws.apigateway.RestApi("userServiceApi", {
@@ -32,7 +29,23 @@ export const cognitoAuthorizer = new aws.apigateway.Authorizer("cognitoAuthorize
     providerArns: [userPool.arn],
 });
 
-// Helper to create an API Gateway resource and method
+// Helper to create a unique Lambda permission per endpoint
+function allowApiGatewayInvokePerEndpoint(
+    lambdaFn: aws.lambda.Function,
+    api: aws.apigateway.RestApi,
+    pathPart: string,
+    method: string
+) {
+    // The sourceArn allows API Gateway to invoke the Lambda for this resource/method
+    return new aws.lambda.Permission(`userServiceLambda-invoke-permission-${pathPart}-${method}`, {
+        action: "lambda:InvokeFunction",
+        function: lambdaFn.name,
+        principal: "apigateway.amazonaws.com",
+        sourceArn: pulumi.interpolate`${api.executionArn}/${method}/${pathPart}`,
+    });
+}
+
+// Helper to create an API Gateway resource, method, integration, and permission
 function addEndpoint(
     parentId: pulumi.Output<string>,
     pathPart: string,
@@ -65,6 +78,10 @@ function addEndpoint(
     };
 
     new aws.apigateway.Method(`method-${pathPart}-${method}`, methodOpts);
+
+    // Create a unique Lambda permission for this endpoint
+    allowApiGatewayInvokePerEndpoint(lambda, userServiceApi, pathPart, method);
+
     return resource;
 }
 
@@ -72,7 +89,7 @@ function addEndpoint(
 const rootResourceId = userServiceApi.rootResourceId;
 
 // Public endpoints (no auth)
-addEndpoint(rootResourceId, "auth", "POST", userServiceLambda); // /auth (might use for routing in Lambda)
+addEndpoint(rootResourceId, "auth", "POST", userServiceLambda); // /auth
 addEndpoint(rootResourceId, "signup", "POST", userServiceLambda); // /signup
 
 // Protected endpoints (require Cognito JWT)
