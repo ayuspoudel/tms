@@ -1,9 +1,11 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
+const config = new pulumi.Config()
 // List of bucket names
+const tmsBucketName = config.require("TMS_BUCKET_NAME")
 const bucketNames = [
-    "tms-msdeploy-lambda-code-bucket",
+    tmsBucketName,
 ];
 // Create multiple S3 buckets using a loop
 const buckets = bucketNames.map(bucketName => {

@@ -17,8 +17,6 @@ permissions:
   packages: write
 
 env:
-  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-  AWS_DEFAULT_REGION: us-east-1
   AWS_REGION: us-east-1
 jobs:
   pulumi-plan:
@@ -52,11 +50,13 @@ jobs:
       - name: Pulumi Stack Init
         run: |
          cd pulumi/s3-buckets
+         pulumi set config TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
          pulumi stack init ${GITHUB_REF#refs/heads/} ||  pulumi stack select ${GITHUB_REF#refs/heads/} # Dynamically use the branch name as the stack name
 
       - name: Pulumi Preview (Dry Run)
         run: |
          cd pulumi/s3-buckets
+         pulumi set config TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
          pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
 
   pulumi-apply:
@@ -91,6 +91,7 @@ jobs:
       - name: Run Pulumi Apply in the user-service folder
         run: |
           cd pulumi/s3-buckets
+          pulumi set config TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi stack select ${GITHUB_REF#refs/heads/}
           pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
 
@@ -126,5 +127,6 @@ jobs:
       - name: Run Pulumi Destroy in the user-service folder
         run: |
           cd pulumi/s3-buckets
+          pulumi set config TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi stack select ${GITHUB_REF#refs/heads/}
           pulumi destroy --yes --stack ${GITHUB_REF#refs/heads/}
