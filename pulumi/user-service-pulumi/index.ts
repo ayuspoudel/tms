@@ -4,7 +4,13 @@ import { userPool, userPoolClient } from "./src/cognito";
 import { userProfileTable } from "./src/dynamodb";
 import { createLambdaRole } from "./src/iam-role";
 import { createLambdaFunction, allowApiGatewayInvoke } from "./src/lambda";
-
+import {
+    userServiceApi,
+    prodStage,
+    apiEndpoint,
+    deployment,
+    cognitoAuthorizer,
+} from "./src/api-gateway";
 // Read bucket/key from Pulumi config
 const config = new pulumi.Config();
 const lambdaBucket = config.require("lambdaBucket");
@@ -33,3 +39,10 @@ export const lambdaArn = userLambda.arn;
 export const cognitoUserPoolId = userPool.id;
 export const cognitoUserPoolClientId = userPoolClient.id;
 export const dynamoTableName = userProfileTable.name;
+export {
+    apiEndpoint,
+    prodStage,
+    userServiceApi,
+    deployment,
+    cognitoAuthorizer,
+};
