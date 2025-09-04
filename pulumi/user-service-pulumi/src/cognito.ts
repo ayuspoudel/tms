@@ -29,9 +29,8 @@ export const userPoolClient = new aws.cognito.UserPoolClient("userPoolClient", {
     accessTokenValidity: 1,   // 1 hour
     idTokenValidity: 1,       // 1 hour
     explicitAuthFlows: [
-        "ADMIN_NO_SRP_AUTH",
-        "ALLOW_REFRESH_TOKEN_AUTH",
         "ALLOW_USER_PASSWORD_AUTH",
         "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+        "ALLOW_REFRESH_TOKEN_AUTH",
     ],
 });
