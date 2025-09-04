@@ -33,8 +33,9 @@ export function createLambdaFunction(
 }
 
 // Lambda permission for API Gateway
-export function allowApiGatewayInvoke(lambdaFn: aws.lambda.Function) {
-    return new aws.lambda.Permission(`${lambdaFn.name}-invoke-permission`, {
+export function allowApiGatewayInvoke(lambdaFn: aws.lambda.Function, logicalName: string = "userServiceLambda") {
+    // Resource name must be a static string or logical name, NOT an Output
+    return new aws.lambda.Permission(`${logicalName}-invoke-permission`, {
         action: "lambda:InvokeFunction",
         function: lambdaFn.name,
         principal: "apigateway.amazonaws.com",
