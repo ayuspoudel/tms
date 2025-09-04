@@ -23,7 +23,7 @@ module.exports = async (email, password) => {
                 accessToken: authResponse.AuthenticationResult.AccessToken,
                 idToken: authResponse.AuthenticationResult.IdToken,
                 refreshToken: authResponse.AuthenticationResult.RefreshToken,
-            }),
+            }),  
         };
     } catch (error) {
         console.error(error);
