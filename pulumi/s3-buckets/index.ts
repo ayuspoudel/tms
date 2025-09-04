@@ -1,44 +1,38 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-const config = new pulumi.Config()
-// List of bucket names
-const tmsBucketName = config.require("TMS_BUCKET_NAME")
-const bucketNames = [
-    tmsBucketName,   
-]; 
-// Create multiple S3 buckets using a loop
-const buckets = bucketNames.map(bucketName => {
-    // Create the S3 bucket
-    const bucket = new aws.s3.Bucket(bucketName, {
-        versioning: {
-            enabled: true,  // Enable versioning
-        },
-        tags: {
-            Name: bucketName,
-            Environment: "dev",
-            Project: "TMS",
-        },
-    });
+// Read bucket name from Pulumi config
+const config = new pulumi.Config();
+const tmsBucketName = config.require("TMS_BUCKET_NAME");
 
-    // Apply lifecycle configuration to the bucket
-    new aws.s3.BucketLifecycleConfiguration(`${bucketName}-lifecycle`, {
-        bucket: bucket.id,
-        rules: [
-            {
-                id: `${bucketName}-lifecycle-rule`,  // Add an id for the lifecycle rule
-                status: "Enabled",  // Correct usage of status instead of enabled
-                filter: {
-                    prefix: "", // Apply rule to all objects
-                },
-                expiration: {
-                    days: 365,  // Expire objects after 365 days
-                },
-            },
-        ],
-    });
-    return bucket;
+// Create the S3 bucket
+const tmsBucket = new aws.s3.Bucket(tmsBucketName, {
+    versioning: {
+        enabled: true, // Enable versioning
+    },
+    tags: {
+        Name: tmsBucketName,
+        Environment: "dev",
+        Project: "TMS",
+    },
 });
 
-// Export all bucket names
-export const bucketNamesOutput = buckets.map(bucket => bucket.bucket);
+// Apply a lifecycle configuration to expire objects after 365 days
+new aws.s3.BucketLifecycleConfiguration(`${tmsBucketName}-lifecycle`, {
+    bucket: tmsBucket.id,
+    rules: [
+        {
+            id: `${tmsBucketName}-lifecycle-rule`,
+            status: "Enabled", // Must be "Enabled"
+            filter: {
+                prefix: "", // Apply rule to all objects
+            },
+            expiration: {
+                days: 365,
+            },
+        },
+    ],
+});
+
+// Export the bucket name
+export const bucketNameOutput = tmsBucket.bucket;

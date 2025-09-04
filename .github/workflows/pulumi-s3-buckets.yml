@@ -90,12 +90,27 @@ jobs:
             npm install  
 
       - name: Run Pulumi Apply in the user-service folder
+        id: pulumi
         run: |
-          cd pulumi/s3-buckets
-          pulumi stack select ${GITHUB_REF#refs/heads/}
-          pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
-          pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
-          pulumi stack output
+            cd pulumi/s3-buckets
+            # Select the stack based on the branch name
+            pulumi stack select ${GITHUB_REF#refs/heads/}
+            
+            # Set the TMS_BUCKET_NAME config for Pulumi
+            pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
+            
+            # Deploy the stack
+            pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
+            
+            # Capture the bucket name output from Pulumi
+            BUCKET_NAME=$(pulumi stack output bucketNameOutput)
+            echo "Pulumi created bucket: $BUCKET_NAME"
+            
+            # Set the bucket name as a GitHub repo variable
+            gh variable set TMS_BUCKET_NAME --body "$BUCKET_NAME" --repo "${GITHUB_REPOSITORY}"
+        env:
+            GH_TOKEN: ${{ secrets.GH_PAT_TOKEN }}
+
 
   pulumi-destroy:
     name: Pulumi Destroy
