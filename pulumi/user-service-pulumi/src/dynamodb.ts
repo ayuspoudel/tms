@@ -7,10 +7,10 @@ export const userProfileTable = new aws.dynamodb.Table("userProfileTable", {
     attributes: [
         { name: "user_id", type: "S" },
         { name: "email", type: "S" },
-        { name: "role", type: "S" },
-        { name: "name", type: "S" },
+        // { name: "role", type: "S" },
+        // { name: "name", type: "S" },
         { name: "created_at", type: "S" },
-        { name: "updated_at", type: "S" },
+        // { name: "updated_at", type: "S" },
     ],
     billingMode: "PAY_PER_REQUEST", // On-demand pricing
     streamEnabled: true, // Enable streams
