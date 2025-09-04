@@ -34,10 +34,9 @@ export const cognitoAuthorizer = new aws.apigateway.Authorizer("cognitoAuthorize
 function allowApiGatewayInvokePerEndpoint(
     lambdaFn: aws.lambda.Function,
     api: aws.apigateway.RestApi,
-    pathParts: string[], // PATCH: now supports nested resources
+    pathParts: string[],
     method: string
 ) {
-    // Compose the resource path (e.g. /profile or /v1/profile)
     const resourcePath = pathParts.join("/");
     return new aws.lambda.Permission(`userServiceLambda-invoke-permission-${resourcePath.replace(/\//g, "-")}-${method}`, {
         action: "lambda:InvokeFunction",
@@ -47,7 +46,7 @@ function allowApiGatewayInvokePerEndpoint(
     });
 }
 
-// Helper to add method/integration/permission for an existing resource
+// Helper to reliably add method/integration/permission for an existing resource
 function addMethodAndIntegration(
     resourceId: pulumi.Output<string>,
     pathParts: string[],
@@ -57,7 +56,8 @@ function addMethodAndIntegration(
     authorizer?: aws.apigateway.Authorizer
 ) {
     const resourcePath = pathParts.join("-");
-    new aws.apigateway.Integration(`integration-${resourcePath}-${method}`, {
+    // 1. Integration (must come before Method)
+    const integration = new aws.apigateway.Integration(`integration-${resourcePath}-${method}`, {
         restApi: api.id,
         resourceId: resourceId,
         httpMethod: method,
@@ -65,26 +65,22 @@ function addMethodAndIntegration(
         type: "AWS_PROXY",
         uri: lambda.invokeArn,
     });
-
-    new aws.apigateway.Method(`method-${resourcePath}-${method}`, {
+    // 2. Method
+    const apigwMethod = new aws.apigateway.Method(`method-${resourcePath}-${method}`, {
         restApi: api.id,
         resourceId: resourceId,
         httpMethod: method,
         authorization: authorizer ? "COGNITO_USER_POOLS" : "NONE",
         authorizerId: authorizer ? authorizer.id : undefined,
         apiKeyRequired: false,
-    });
-
+    }, { dependsOn: [integration] }); // PATCH: depend on integration
+    // 3. Lambda Permission
     allowApiGatewayInvokePerEndpoint(lambda, api, pathParts, method);
+    return apigwMethod;
 }
 
 // Root resource ("/")
 const rootResourceId = userServiceApi.rootResourceId;
-
-// ----------------------------------------------------------------------
-// PATCH: Only create each resource ONCE. If it already exists in AWS,
-// Pulumi will not be able to recreate it, so do a refresh or destroy if needed.
-// ----------------------------------------------------------------------
 
 // Public endpoints (no auth)
 const authResource = new aws.apigateway.Resource("resource-auth", {
@@ -92,43 +88,39 @@ const authResource = new aws.apigateway.Resource("resource-auth", {
     parentId: rootResourceId,
     pathPart: "auth",
 });
-addMethodAndIntegration(authResource.id, ["auth"], "POST", userServiceLambda, userServiceApi);
+const authMethod = addMethodAndIntegration(authResource.id, ["auth"], "POST", userServiceLambda, userServiceApi);
 
 const signupResource = new aws.apigateway.Resource("resource-signup", {
     restApi: userServiceApi.id,
     parentId: rootResourceId,
     pathPart: "signup",
 });
-addMethodAndIntegration(signupResource.id, ["signup"], "POST", userServiceLambda, userServiceApi);
+const signupMethod = addMethodAndIntegration(signupResource.id, ["signup"], "POST", userServiceLambda, userServiceApi);
 
 // Protected endpoints (require Cognito JWT)
-// Create /profile resource ONCE
 const profileResource = new aws.apigateway.Resource("resource-profile", {
     restApi: userServiceApi.id,
     parentId: rootResourceId,
     pathPart: "profile",
 });
-addMethodAndIntegration(profileResource.id, ["profile"], "GET", userServiceLambda, userServiceApi, cognitoAuthorizer);
-addMethodAndIntegration(profileResource.id, ["profile"], "PUT", userServiceLambda, userServiceApi, cognitoAuthorizer);
+const profileMethodGet = addMethodAndIntegration(profileResource.id, ["profile"], "GET", userServiceLambda, userServiceApi, cognitoAuthorizer);
+const profileMethodPut = addMethodAndIntegration(profileResource.id, ["profile"], "PUT", userServiceLambda, userServiceApi, cognitoAuthorizer);
 
-// /logout
 const logoutResource = new aws.apigateway.Resource("resource-logout", {
     restApi: userServiceApi.id,
     parentId: rootResourceId,
     pathPart: "logout",
 });
-addMethodAndIntegration(logoutResource.id, ["logout"], "POST", userServiceLambda, userServiceApi, cognitoAuthorizer);
+const logoutMethod = addMethodAndIntegration(logoutResource.id, ["logout"], "POST", userServiceLambda, userServiceApi, cognitoAuthorizer);
+
+// Gather all methods for deployment dependency
+const allMethods = [authMethod, signupMethod, profileMethodGet, profileMethodPut, logoutMethod];
 
 // Deploy the API (create deployment first)
 export const deployment = new aws.apigateway.Deployment("userServiceApiDeployment", {
     restApi: userServiceApi.id,
     description: "Deployment for User Service API",
-    // PATCH: deployment depends on all methods/integrations
-}, { dependsOn: [
-    userServiceLambda,
-    // PATCH: add all method resources to dependsOn for proper deployment order
-    authResource, signupResource, profileResource, logoutResource
-] });
+}, { dependsOn: [userServiceLambda, authResource, signupResource, profileResource, logoutResource, ...allMethods] });
 
 // Create a stage referencing the deployment
 export const prodStage = new aws.apigateway.Stage("prodStage", {
