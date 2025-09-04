@@ -24,7 +24,6 @@ export function createLambdaFunction(
                 USER_POOL_ID: userPool.id,
                 CLIENT_ID: userPoolClient.id,
                 EMAIL_GSI_NAME: "emailIndex",
-                AWS_REGION: "us-east-1",
             },
         },
         timeout: 10, // seconds (adjust as needed)
