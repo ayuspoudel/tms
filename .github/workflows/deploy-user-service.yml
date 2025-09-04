@@ -36,8 +36,8 @@ jobs:
       - name: Upload Lambda code to S3
         uses: aws-actions/aws-s3-upload@v1
         with:
-          bucket: your-lambda-code-bucket  # Replace with your actual S3 bucket name
-          key: lambda-code.zip  # Path within the S3 bucket
+          bucket: ${{vars.TMS_BUCKET_NAME}}  # Replace with your actual S3 bucket name
+          key: ${{vars.USER_SERVICE_LAMBDA_FUNCTION_NAME}}  # Path within the S3 bucket
           file: services/user-service-lambda/lambda-code.zip  # Local path to the zip file
 
       # Optional: Clean up the local ZIP file after uploading

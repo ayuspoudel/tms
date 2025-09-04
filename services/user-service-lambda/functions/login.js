@@ -12,7 +12,7 @@ module.exports = async (email, password) => {
             AuthParameters: {
                 USERNAME: email,
                 PASSWORD: password,
-            },
+            },  
         };
 
         const authResponse = await cognito.adminInitiateAuth(authParams).promise();
