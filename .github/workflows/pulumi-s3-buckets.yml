@@ -91,6 +91,8 @@ jobs:
 
       - name: Run Pulumi Apply in the user-service folder
         id: pulumi
+        env:
+            GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
             cd pulumi/s3-buckets
             # Select the stack based on the branch name
@@ -108,8 +110,7 @@ jobs:
             
             # Set the bucket name as a GitHub repo variable
             gh variable set TMS_BUCKET_NAME --body "$BUCKET_NAME" --repo "${GITHUB_REPOSITORY}"
-        env:
-            GH_TOKEN: ${{ secrets.GH_PAT_TOKEN }}
+
 
 
   pulumi-destroy:

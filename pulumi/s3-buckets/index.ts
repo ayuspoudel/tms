@@ -7,7 +7,7 @@ const tmsBucketName = config.require("TMS_BUCKET_NAME");
 
 // Create the S3 bucket
 const tmsBucket = new aws.s3.Bucket(tmsBucketName, {
-    versioning: {
+    versioning: { 
         enabled: true, // Enable versioning
     },
     tags: {
