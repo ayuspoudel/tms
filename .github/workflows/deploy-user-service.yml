@@ -4,7 +4,10 @@ on:
   push:
     paths:
       - 'services/user-service-lambda/**'  # Trigger on any changes in the lambda folder
-
+permissions:
+    contents: read
+    id-token: write
+    packages: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,12 +36,15 @@ jobs:
           zip -r ../lambda-code.zip .  # Zips everything in the lambda directory
 
       # Step 5: Upload the zip to S3
-      - name: Upload Lambda code to S3
-        uses: aws-actions/aws-s3-upload@v1
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          bucket: ${{vars.TMS_BUCKET_NAME}}  # Replace with your actual S3 bucket name
-          key: ${{vars.USER_SERVICE_LAMBDA_FUNCTION_NAME}}  # Path within the S3 bucket
-          file: services/user-service-lambda/lambda-code.zip  # Local path to the zip file
+            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+            aws-region: us-east-1
+
+      - name: Upload Lambda code to S3
+        run: |
+            aws s3 cp services/user-service-lambda/lambda-code.zip s3://${{ vars.TMS_BUCKET_NAME }}/${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
 
       # Optional: Clean up the local ZIP file after uploading
       - name: Remove local ZIP file

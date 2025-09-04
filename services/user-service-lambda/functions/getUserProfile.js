@@ -8,7 +8,7 @@ module.exports = async (user_id) => {
         const getParams = {
             TableName: tableName,
             Key: { user_id },
-        };
+        };  
 
         const result = await dynamodb.get(getParams).promise();
 
