@@ -3,14 +3,15 @@ name: Pulumi CI/CD Pipeline
 on:
   push:
     branches:
-      - 'main'  # Trigger only on push to the main branch
+      - 'main'
     paths:
-      - 'pulumi/user-service-pulumi/**'  # Trigger only if there are changes in the `pulumi/user-service-pulumi` folder
+      - 'pulumi/user-service-pulumi/**'
   pull_request:
     branches:
-      - main  # Trigger for PRs to the main branch
+      - main
     paths:
-      - 'pulumi/user-service-pulumi/**'  # Trigger only if there are changes in the `pulumi/user-service-pulumi` folder
+      - 'pulumi/user-service-pulumi/**'
+
 permissions:
   contents: read
   id-token: write
@@ -20,14 +21,23 @@ env:
   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   AWS_DEFAULT_REGION: us-east-1
   AWS_REGION: us-east-1
+  TMS_BUCKET_NAME: ${{ vars.TMS_BUCKET_NAME }}
+  USER_SERVICE_LAMBDA_FUNCTION_NAME: ${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
+
 jobs:
   pulumi-plan:
     name: Pulumi Plan
     runs-on: ubuntu-latest
+    env:
+      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+      TMS_BUCKET_NAME: ${{ vars.TMS_BUCKET_NAME }}
+      USER_SERVICE_LAMBDA_FUNCTION_NAME: ${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
     steps:
       - uses: actions/checkout@v4
         with:
-                fetch-depth: 0
+          fetch-depth: 0
 
       - name: Set up Pulumi CLI
         run: |
@@ -51,23 +61,36 @@ jobs:
 
       - name: Pulumi Stack Init
         run: |
-         cd pulumi/user-service-pulumi
-         pulumi stack init ${GITHUB_REF#refs/heads/} ||  pulumi stack select ${GITHUB_REF#refs/heads/} # Dynamically use the branch name as the stack name
+          cd pulumi/user-service-pulumi
+          pulumi stack init ${GITHUB_REF#refs/heads/} || pulumi stack select ${GITHUB_REF#refs/heads/}
+
+      - name: Set Pulumi Configs from Environment Variables
+        run: |
+          cd pulumi/user-service-pulumi
+          pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
 
       - name: Pulumi Preview (Dry Run)
         run: |
-         cd pulumi/user-service-pulumi
-         pulumi preview --stack ${GITHUB_REF#refs/heads/}  # Preview the plan before applying
+          cd pulumi/user-service-pulumi
+          pulumi preview --stack ${GITHUB_REF#refs/heads/}
 
   pulumi-apply:
     name: Pulumi Apply
     runs-on: ubuntu-latest
     needs: pulumi-plan
     environment:
-      name: pulumi-up  # This triggers environment protection for manual approval
+      name: pulumi-up
+    env:
+      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+      TMS_BUCKET_NAME: ${{ vars.TMS_BUCKET_NAME }}
+      USER_SERVICE_LAMBDA_FUNCTION_NAME: ${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Pulumi CLI
         run: |
@@ -85,13 +108,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-            cd pulumi/user-service-pulumi
-            npm install  
+          cd pulumi/user-service-pulumi
+          npm install  
+
+      - name: Pulumi Stack Select
+        run: |
+          cd pulumi/user-service-pulumi
+          pulumi stack select ${GITHUB_REF#refs/heads/}
+
+      - name: Set Pulumi Configs from Environment Variables
+        run: |
+          cd pulumi/user-service-pulumi
+          pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
 
       - name: Run Pulumi Apply in the user-service folder
         run: |
           cd pulumi/user-service-pulumi
-          pulumi stack select ${GITHUB_REF#refs/heads/}
           pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
 
   pulumi-destroy:
@@ -99,10 +133,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: pulumi-apply
     environment:
-      name: pulumi-down  # This triggers environment protection for manual approval
+      name: pulumi-down
+    env:
+      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+      TMS_BUCKET_NAME: ${{ vars.TMS_BUCKET_NAME }}
+      USER_SERVICE_LAMBDA_FUNCTION_NAME: ${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Pulumi CLI
         run: |
@@ -123,8 +163,19 @@ jobs:
           cd pulumi/user-service-pulumi 
           npm install  
 
-      - name: Run Pulumi Destroy in the user-service folder
+      - name: Pulumi Stack Select
         run: |
           cd pulumi/user-service-pulumi
           pulumi stack select ${GITHUB_REF#refs/heads/}
+
+      - name: Set Pulumi Configs from Environment Variables
+        run: |
+          cd pulumi/user-service-pulumi
+          pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
+
+      - name: Run Pulumi Destroy in the user-service folder
+        run: |
+          cd pulumi/user-service-pulumi
           pulumi destroy --yes --stack ${GITHUB_REF#refs/heads/}
