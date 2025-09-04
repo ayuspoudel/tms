@@ -95,6 +95,7 @@ jobs:
           pulumi stack select ${GITHUB_REF#refs/heads/}
           pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
+          pulumi stack output
 
   pulumi-destroy:
     name: Pulumi Destroy

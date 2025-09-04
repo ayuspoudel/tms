@@ -37,7 +37,6 @@ const buckets = bucketNames.map(bucketName => {
             },
         ],
     });
-
     return bucket;
 });
 
