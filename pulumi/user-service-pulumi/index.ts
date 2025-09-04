@@ -30,7 +30,7 @@ const userLambda = createLambdaFunction(
 );
 
 // Allow API Gateway to invoke Lambda
-allowApiGatewayInvoke(userLambda);
+allowApiGatewayInvoke(userLambda, "userServiceLambda-main");
 
 // Export Lambda ARN for downstream use
 export const lambdaArn = userLambda.arn;
