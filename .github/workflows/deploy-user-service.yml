@@ -29,23 +29,17 @@ jobs:
           cd services/user-service-lambda
           npm install  # This assumes there is a package.json
 
-      # Step 4: Zip the Lambda function code
+      # Step 4: Zip Lambda function (absolute path)
       - name: Zip Lambda function
         run: |
           cd services/user-service-lambda
-          zip -r lambda-code.zip .  # Puts lambda-code.zip in services/user-service-lambda/
+          zip -r $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip .  # Absolute path
 
-      # Step 5: Upload the zip to S3
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-            role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-            aws-region: us-east-1
-
+      # Step 5: Upload the zip to S3 using absolute path
       - name: Upload Lambda code to S3
         run: |
-            aws s3 cp services/lambda-code.zip s3://${{ vars.TMS_BUCKET_NAME }}/${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
+          aws s3 cp $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip s3://${{ vars.TMS_BUCKET_NAME }}/${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
 
       # Optional: Clean up the local ZIP file after uploading
       - name: Remove local ZIP file
-        run: rm services/lambda-code.zip
+        run: rm $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip

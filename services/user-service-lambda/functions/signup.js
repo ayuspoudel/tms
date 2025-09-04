@@ -15,7 +15,7 @@ module.exports = async (email, password, name, role) => {
                 { Name: 'email', Value: email },
                 { Name: 'name', Value: name },
                 { Name: 'role', Value: role }
-            ],
+            ],  
         };
 
         const createUserResponse = await cognito.adminCreateUser(createUserParams).promise();
