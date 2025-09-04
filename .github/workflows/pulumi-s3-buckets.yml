@@ -92,8 +92,8 @@ jobs:
       - name: Run Pulumi Apply in the user-service folder
         run: |
           cd pulumi/s3-buckets
-          pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi up --yes --stack ${GITHUB_REF#refs/heads/}
 
   pulumi-destroy:
@@ -128,6 +128,6 @@ jobs:
       - name: Run Pulumi Destroy in the user-service folder
         run: |
           cd pulumi/s3-buckets
-          pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi stack select ${GITHUB_REF#refs/heads/}
+          pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
           pulumi destroy --yes --stack ${GITHUB_REF#refs/heads/}
