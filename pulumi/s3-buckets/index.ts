@@ -5,7 +5,7 @@ const config = new pulumi.Config()
 // List of bucket names
 const tmsBucketName = config.require("TMS_BUCKET_NAME")
 const bucketNames = [
-    tmsBucketName,
+    tmsBucketName, 
 ];
 // Create multiple S3 buckets using a loop
 const buckets = bucketNames.map(bucketName => {
