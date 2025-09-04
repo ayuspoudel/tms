@@ -18,7 +18,7 @@ module.exports = async (email, password) => {
         const authResponse = await cognito.adminInitiateAuth(authParams).promise();
 
         return { 
-            statusCode: 200,
+            statusCode: 200,  
             body: JSON.stringify({
                 accessToken: authResponse.AuthenticationResult.AccessToken,
                 idToken: authResponse.AuthenticationResult.IdToken,
