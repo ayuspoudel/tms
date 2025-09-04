@@ -50,8 +50,9 @@ jobs:
       - name: Pulumi Stack Init
         run: |
          cd pulumi/s3-buckets
-         pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
          pulumi stack init ${GITHUB_REF#refs/heads/} ||  pulumi stack select ${GITHUB_REF#refs/heads/} # Dynamically use the branch name as the stack name
+         pulumi config set TMS_BUCKET_NAME ${{ vars.TMS_BUCKET_NAME }}
+         
 
       - name: Pulumi Preview (Dry Run)
         run: |
