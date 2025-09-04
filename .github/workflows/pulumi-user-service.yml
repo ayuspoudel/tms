@@ -69,7 +69,7 @@ jobs:
           cd pulumi/user-service-pulumi
           pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
           pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
-          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
 
       - name: Pulumi Preview (Dry Run)
         run: |
@@ -121,7 +121,7 @@ jobs:
           cd pulumi/user-service-pulumi
           pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
           pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
-          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
 
       - name: Run Pulumi Apply in the user-service folder
         run: |
@@ -173,7 +173,7 @@ jobs:
           cd pulumi/user-service-pulumi
           pulumi config set lambdaBucket "$TMS_BUCKET_NAME" --stack ${GITHUB_REF#refs/heads/}
           pulumi config set lambdaFunctionName "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
-          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME/lambda-code.zip" --stack ${GITHUB_REF#refs/heads/}
+          pulumi config set lambdaKey "$USER_SERVICE_LAMBDA_FUNCTION_NAME" --stack ${GITHUB_REF#refs/heads/}
 
       - name: Run Pulumi Destroy in the user-service folder
         run: |

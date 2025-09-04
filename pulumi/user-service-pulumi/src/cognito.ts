@@ -10,7 +10,7 @@ export const userPool = new aws.cognito.UserPool("userPool", {
         minimumLength: 8,
         requireUppercase: true,
         requireLowercase: true,
-        requireNumbers: true,
+        requireNumbers: true,  
         requireSymbols: true,
     },
     schemas: [
