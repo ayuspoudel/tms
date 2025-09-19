@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: User Service Lambda
+
+Resources:
+  UserServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: user-service-dev
+      Handler: index.handler
+      Runtime: nodejs18.x
+      CodeUri: .          # current directory (where index.js lives)
+      MemorySize: 256
+      Timeout: 10
+      Environment:
+        Variables:
+          TABLE_NAME: userProfileTable-052fafb
+          USER_POOL_ID: us-east-1_7exxTnCky
+          CLIENT_ID: 7ud9m52ffngf84kjvje00aq0mi

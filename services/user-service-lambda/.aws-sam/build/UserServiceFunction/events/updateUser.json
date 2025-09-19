@@ -1,0 +1,6 @@
+{
+  "httpMethod": "PUT",
+  "path": "/auth/profile/123",
+  "pathParameters": { "user_id": "123" },
+  "body": "{\"name\":\"Alice Updated\",\"role\":\"user\"}"
+}
