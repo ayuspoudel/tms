@@ -10,7 +10,7 @@ module.exports = async (email, password) => {
             UserPoolId: userPoolId,
             ClientId: process.env.CLIENT_ID,
             AuthParameters: {
-                USERNAME: email,
+                USERNAME: email,    // works since email is alias
                 PASSWORD: password,
             },  
         };
@@ -19,6 +19,7 @@ module.exports = async (email, password) => {
 
         return { 
             statusCode: 200,  
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 accessToken: authResponse.AuthenticationResult.AccessToken,
                 idToken: authResponse.AuthenticationResult.IdToken,
@@ -29,7 +30,8 @@ module.exports = async (email, password) => {
         console.error(error);
         return {
             statusCode: 401,
-            body: JSON.stringify({ message: 'Invalid credentials' }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: 'Invalid credentials', error: error.message }),
         };
     }
 };

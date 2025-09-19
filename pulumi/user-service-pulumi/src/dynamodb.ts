@@ -14,7 +14,7 @@ export const userProfileTable = new aws.dynamodb.Table("userProfileTable", {
     ],
     billingMode: "PAY_PER_REQUEST", // On-demand pricing
     streamEnabled: true, // Enable streams
-    streamViewType: "NEW_AND_OLD_IMAGES",
+    streamViewType: "NEW_AND_OLD_IMAGES",   
     globalSecondaryIndexes: [
         {
             name: "createdAtIndex", // GSI for querying by created_at
