@@ -1,5 +1,0 @@
-{
-  "httpMethod": "GET",
-  "path": "/auth/profile/123",
-  "pathParameters": { "user_id": "123" }
-}
