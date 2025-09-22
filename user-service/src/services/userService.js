@@ -1,13 +1,15 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { User } from '../models/User.js';
+import { UserRepository } from '../repositories/index.js';
 import { BadRequest, NotFound, Unauthorized } from '../utils/errors.js';
 import { validateLogin, validateSignup } from '../utils/validation.js';
 
 export async function signup(data) {
+  console.log()
   await validateSignup(data);
 
-  const existing = await User.findByEmail(data.email);
+  const existing = await UserRepository.findByEmail(data.email);
   if (existing) {
     throw BadRequest('Email already exists');
   }
@@ -15,6 +17,7 @@ export async function signup(data) {
   const passwordHash = await bcrypt.hash(data.password, 10);
 
   const user = new User({
+    id: uuid(),
     firstName: data.firstName,
     lastName: data.lastName,
     dob: data.dob,
@@ -24,14 +27,14 @@ export async function signup(data) {
     provider: 'local',
   });
 
-  await user.save();
+  await UserRepository.createUser(user);
   return user.safe();
 }
 
 export async function login({ email, password }) {
   await validateLogin({ email, password });
 
-  const user = await User.findByEmail(email);
+  const user = await UserRepository.findByEmail(email);
   if (!user) {
     throw NotFound('User not found. Please sign up before login');
   }

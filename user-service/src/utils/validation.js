@@ -1,4 +1,4 @@
-import { BadRequest } from "./errors";
+import { BadRequest } from "./errors.js";
 
 export async function validateSignup(data){
     if (!data.firstName || !data.lastName || !data.email || !data.password || !data.dob){
