@@ -1,23 +1,23 @@
-# name: Pulumi CI/CD Pipeline
+name: Pulumi CI/CD Pipeline
 
-# on:
-#   push:
-#     branches:
-#       - 'main'  # Trigger only on push to the main branch
-#     paths:
-#       - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
-#   pull_request:
-#     branches:
-#       - main  # Trigger for PRs to the main branch
-#     paths:
-#       - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
-# permissions:
-#   contents: read
-#   id-token: write
-#   packages: write
+on:
+  push:
+    branches:
+      - 'main'  # Trigger only on push to the main branch
+    paths:
+      - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
+  pull_request:
+    branches:
+      - main  # Trigger for PRs to the main branch
+    paths:
+      - 'pulumi/s3-buckets/**'  # Trigger only if there are changes in the `pulumi/s3-buckets` folder
+permissions:
+  contents: read
+  id-token: write
+  packages: write
 
-# env:
-#   AWS_REGION: us-east-1
+env:
+  AWS_REGION: us-east-1
 # jobs:
 #   pulumi-plan:
 #     name: Pulumi Plan

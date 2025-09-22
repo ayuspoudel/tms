@@ -2,34 +2,24 @@ name: Deploy Lambda to S3
 
 on:
   push:
-    paths:
-      - 'services/user-service-lambda/**'
-permissions:
-  contents: read
-  id-token: write
-  packages: write
+    branches:
+      - main   
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write   # required for OIDC
+      contents: read    # required for actions/checkout
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: '14'
-
-      - name: Install dependencies
-        run: |
-          cd services/user-service-lambda
-          npm install
-
-      - name: Zip Lambda function
-        run: |
-          cd services/user-service-lambda
-          zip -r $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip .
+          node-version: 18
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -37,9 +27,20 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
 
-      - name: Upload Lambda code to S3
-        run: |
-          aws s3 cp $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip s3://${{ vars.TMS_BUCKET_NAME }}/${{ vars.USER_SERVICE_LAMBDA_FUNCTION_NAME }}
+      - name: Install dependencies
+        working-directory: user-service
+        run: npm ci --only=production
 
-      - name: Remove local ZIP file
-        run: rm $GITHUB_WORKSPACE/services/user-service-lambda/lambda-code.zip
+      - name: Package Lambda
+        working-directory: user-service
+        run: |
+          zip -r ../user-service.zip . \
+            -x "*.git*" \
+            -x "*.github*" \
+            -x "test/*" \
+            -x "node_modules/aws-sdk/*"
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp user-service.zip s3://tms-msdeploy-lambda-code-bucket-2f7e7c7/user-service-$(date +%Y%m%d%H%M%S).zip
+          aws s3 cp user-service.zip s3://tms-msdeploy-lambda-code-bucket-2f7e7c7/user-service-latest.zip
