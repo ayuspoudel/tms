@@ -1,13 +1,16 @@
 import {v4 as uuid} from 'uuid';
-import bycrypt from bycryptjs;
-import dynamo from '../utils/db.js';
+import bcrypt from 'bcryptjs';
+import {dynamo} from '../utils/db.js';
 
+
+const TABLE = process.env.USER_TABLE || 'Users';
 export class User{
     constructor({
         id = uuid(),
         firstName,
         lastName, 
         dob,
+        email,
         passwordHash,
         team,
         provider,
@@ -23,7 +26,7 @@ export class User{
         this.team = team || 'general';
         this.provider= provider || 'local';
         this.createdAt = createdAt || new Date().toISOString();
-        this.updatedAt = updatedAt || new Date.toISOString();
+        this.updatedAt = updatedAt || new Date().toISOString();
     }
 
     async save() {
@@ -45,11 +48,21 @@ export class User{
             TableName: TABLE,
             IndexName: 'email-index',
             KeyConditionExpression: 'email = :email',
-            ExpressionAttributeValues: {'email': email.toLowerCase()}
+            ExpressionAttributeValues: {':email': email.toLowerCase()}
         }).promise();
 
-        if (res.count === 0) {return null;};
+        if (res.Count === 0) {return null;};
         return new User(res.Items[0]);
+    }
+
+    static async findById(id){
+        const res = await dynamo.get({
+            TableName: TABLE,
+            Key: { id },
+        }).promise();
+
+        if (res.Count === 0) {return null;};
+        return new User(res.Items);
     }
 
     async delete(){
