@@ -7,7 +7,7 @@ const TABLE = process.env.USER_TABLE || 'Users';
 export class User{
     constructor({
         id = uuid(),
-        firstName,
+        firstName,  
         lastName, 
         dob,
         email,
