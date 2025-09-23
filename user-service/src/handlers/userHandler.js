@@ -7,7 +7,10 @@ import { UserSessionRepository } from "../repositories/index.js";
 export const handler = async (event) => {
   try {
     const { httpMethod, path, headers, body } = event;
-    const normalizedPath = path?.replace(/^\/[^/]+/, "") || path;
+    const normalizedPath = path
+      ?.replace(/^\/[^/]+/, "") // strip stage (/dev)
+      .replace(/^\/auth/, "")   // strip /auth prefix
+      || path;
 
     if (httpMethod === "POST" && normalizedPath === "/signup") {
       const data = JSON.parse(body);
