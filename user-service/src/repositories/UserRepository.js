@@ -1,5 +1,5 @@
-import { User } from "../../models/User.js";
-import { dynamo } from "../../utils/db.js";
+import { User } from "../models/User.js";
+import { dynamo } from "../utils/db.js";
 
 const TABLE = process.env.USER_TABLE || 'Users';
 
@@ -22,7 +22,7 @@ export class UserRepository {
             Key: { id }
         }).promise();
 
-        if (!res.Item) return null; // Corrected for DynamoDB .get response
+        if (!res.Item) return null; 
         return new User(res.Item);
     }
 

@@ -1,9 +1,11 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { User } from '../models/User.js';
-import { UserRepository } from '../repositories/index.js';
+import { UserRepository, UserSessionRepository } from '../repositories/index.js';
 import { BadRequest, NotFound, Unauthorized } from '../utils/errors.js';
 import { validateLogin, validateSignup } from '../utils/validation.js';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
+
 
 export async function signup(data) {
   console.log()
@@ -28,7 +30,23 @@ export async function signup(data) {
   });
 
   await UserRepository.createUser(user);
-  return user.safe();
+  const safe_user = user.safe();
+
+  const refresh_token = generateRefreshToken(safeUser);
+  const access_token = generateAccessToken(safeUser);
+
+  const decoded = jwt.decode(refresh_token);
+  await new UserSessionRepository().createSession()({
+    userId: safe_user.id,
+    refresh_token,
+    expiresAt: decoded.exp,
+  })
+
+  return {
+    user: safe_user,
+    access_token,
+    refresh_token
+  }
 }
 
 export async function login({ email, password }) {
@@ -44,5 +62,22 @@ export async function login({ email, password }) {
     throw Unauthorized('Invalid credentials');
   }
 
-  return user.safe();
+  const safe_user = user.safe();
+
+  const refresh_token = generateRefreshToken(safeUser);
+  const access_token = generateAccessToken(safeUser);
+
+  const decoded = jwt.decode(refreshToken);
+
+  await new UserSessionRepository().createSession({
+    userId: safeUser.id,
+    refreshToken,
+    expiresAt: decoded.exp,
+  });
+
+  return {
+    user: safe_user,
+    access_token,
+    refresh_token
+  }
 }
