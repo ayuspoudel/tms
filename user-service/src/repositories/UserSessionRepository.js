@@ -1,55 +1,79 @@
-import {dynamo} from "../utils/db.js";
-import {v4 as uuid} from 'uuid';
+import { dynamo } from "../utils/db.js";
+import { v4 as uuid } from "uuid";
+import {
+  PutCommand,
+  QueryCommand,
+  DeleteCommand,
+} from "@aws-sdk/lib-dynamodb";
 
 const TABLE_NAME = process.env.USER_SESSIONS_TABLE || "UserSessions";
 
-
-
 export class UserSessionRepository {
-    async createSession({userId, refreshToken, expiresAt}){
-        const session = {id: uuid(), userId, refreshToken, expiresAt, createAt: new Date().toISOString}
-        await dynamo.put({TableName: TABLE_NAME, item: session}).promise();
-        return session;
-    }
+  async createSession({ userId, refreshToken, expiresAt }) {
+    const session = {
+      id: uuid(),
+      userId,
+      refreshToken,
+      expiresAt,
+      createdAt: new Date().toISOString(),
+    };
 
-    async findBySession(rereshToken){
-        const res = dynamo.query({TableName: TABLE_NAME, IndexName: 'refreshToken-index', KeyConditionExpression: "refreshToken = :rt", ExpressionAttributeValues: {":rt": refreshToken}}).promise;
-        if(res.Count === 0) return null;
-        return res.items[0];
-    }
-    
-    async deleteByToken(refreshToken) {
-        const session = await this.findByToken(refreshToken);
-        if (!session) return null;
+    const command = new PutCommand({
+      TableName: TABLE_NAME,
+      Item: session, // capital I in v3
+    });
 
-        await dynamo
-        .delete({
-            TableName: TABLE,
-            Key: { id: session.id },
-        })
-        .promise();
-
-        return session;
+    await dynamo.send(command);
+    return session;
   }
-    async deleteByUser(userId) {
-        const res = await dynamo
-        .query({
-            TableName: TABLE,
-            IndexName: "userId-index",
-            KeyConditionExpression: "userId = :uid",
-            ExpressionAttributeValues: { ":uid": userId },
-        })
-        .promise();
 
-        if (res.Count === 0) return;
+  async findBySession(refreshToken) {
+    const command = new QueryCommand({
+      TableName: TABLE_NAME,
+      IndexName: "refreshToken-index",
+      KeyConditionExpression: "refreshToken = :rt",
+      ExpressionAttributeValues: {
+        ":rt": refreshToken,
+      },
+    });
 
-        for (const session of res.Items) {
-        await dynamo
-            .delete({
-            TableName: TABLE,
-            Key: { id: session.id },
-            })
-            .promise();
-        }
+    const res = await dynamo.send(command);
+    if (!res.Count || res.Count === 0) return null;
+    return res.Items[0];
+  }
+
+  async deleteByToken(refreshToken) {
+    const session = await this.findBySession(refreshToken);
+    if (!session) return null;
+
+    const command = new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: { id: session.id },
+    });
+
+    await dynamo.send(command);
+    return session;
+  }
+
+  async deleteByUser(userId) {
+    const queryCommand = new QueryCommand({
+      TableName: TABLE_NAME,
+      IndexName: "userId-index",
+      KeyConditionExpression: "userId = :uid",
+      ExpressionAttributeValues: {
+        ":uid": userId,
+      },
+    });
+
+    const res = await dynamo.send(queryCommand);
+    if (!res.Count || res.Count === 0) return;
+
+    for (const session of res.Items) {
+      const deleteCommand = new DeleteCommand({
+        TableName: TABLE_NAME,
+        Key: { id: session.id },
+      });
+      await dynamo.send(deleteCommand);
     }
+  }
 }

@@ -1,9 +1,12 @@
-import AWS from 'aws-sdk';
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-AWS.config.update({
-    region: process.env.AWS_REGION || 'us-east-1',
-})
+// Create low-level client
+const dynamoDB = new DynamoDBClient({
+  region: process.env.AWS_REGION || "us-east-1",
+});
 
-export const dynamo = new AWS.DynamoDB.DocumentClient();
+// Create high-level DocumentClient wrapper
+const dynamo = DynamoDBDocumentClient.from(dynamoDB);
 
-export const dynamoDB = new AWS.DynamoDB();
+export { dynamo, dynamoDB };

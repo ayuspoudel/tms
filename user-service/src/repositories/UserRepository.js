@@ -1,58 +1,77 @@
 import { User } from "../models/User.js";
 import { dynamo } from "../utils/db.js";
+import {
+  QueryCommand,
+  GetCommand,
+  PutCommand,
+  DeleteCommand,
+} from "@aws-sdk/lib-dynamodb";
 
-const TABLE = process.env.USER_TABLE || 'Users';
+const TABLE = process.env.USER_TABLE || "Users";
 
 export class UserRepository {
-    async findByEmail(email) {
-        const res = await dynamo.query({
-            TableName: TABLE,
-            IndexName: 'email-index',
-            KeyConditionExpression: 'email = :email',
-            ExpressionAttributeValues: { ':email': email.toLowerCase() }
-        }).promise();
+  async findByEmail(email) {
+    const command = new QueryCommand({
+      TableName: TABLE,
+      IndexName: "email-index",
+      KeyConditionExpression: "email = :email",
+      ExpressionAttributeValues: {
+        ":email": email.toLowerCase(),
+      },
+    });
 
-        if (res.Count === 0) return null;
-        return new User(res.Items[0]);
-    }
+    const res = await dynamo.send(command);
+    if (!res.Count || res.Count === 0) return null;
+    return new User(res.Items[0]);
+  }
 
-    async findById(id) {
-        const res = await dynamo.get({
-            TableName: TABLE,
-            Key: { id }
-        }).promise();
+  async findById(id) {
+    const command = new GetCommand({
+      TableName: TABLE,
+      Key: { id },
+    });
 
-        if (!res.Item) return null; 
-        return new User(res.Item);
-    }
+    const res = await dynamo.send(command);
+    if (!res.Item) return null;
+    return new User(res.Item);
+  }
 
-    async createUser(userData) {
-        const user = new User(userData);
-        user.updatedAt = new Date().toISOString();
-        await dynamo.put({
-            TableName: TABLE,
-            Item: user
-        }).promise();
-        return user;
-    }
+  async createUser(userData) {
+    const user = new User(userData);
+    user.updatedAt = new Date().toISOString();
 
-    async updateUser(id, updates) {
-        const user = await this.findById(id);
-        if (!user) return null;
-        Object.assign(user, updates);
-        user.updatedAt = new Date().toISOString();
-        await dynamo.put({
-            TableName: TABLE,
-            Item: user
-        }).promise();
-        return user;
-    }
+    const command = new PutCommand({
+      TableName: TABLE,
+      Item: user,
+    });
 
-    async deleteUser(id) {
-        await dynamo.delete({
-            TableName: TABLE,
-            Key: { id }
-        }).promise();
-        return true;
-    }
+    await dynamo.send(command);
+    return user;
+  }
+
+  async updateUser(id, updates) {
+    const existing = await this.findById(id);
+    if (!existing) return null;
+
+    Object.assign(existing, updates);
+    existing.updatedAt = new Date().toISOString();
+
+    const command = new PutCommand({
+      TableName: TABLE,
+      Item: existing,
+    });
+
+    await dynamo.send(command);
+    return existing;
+  }
+
+  async deleteUser(id) {
+    const command = new DeleteCommand({
+      TableName: TABLE,
+      Key: { id },
+    });
+
+    await dynamo.send(command);
+    return true;
+  }
 }
