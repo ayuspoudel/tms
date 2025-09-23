@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { User } from '../models/User.js';
-import { UserRepository, UserSessionRepository } from '../repositories/index.js';
+import { UserRepository, UserSessionRepository } from "../repositories/index.js";
 import { BadRequest, NotFound, Unauthorized } from '../utils/errors.js';
 import { validateLogin, validateSignup } from '../utils/validation.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
