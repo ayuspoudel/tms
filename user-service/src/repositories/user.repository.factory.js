@@ -1,7 +1,7 @@
-import { MongoUserRepository } from "./user.mongo.js";
-import { DynamoUserRepository } from "./user.dynamo.js";
+const { MongoUserRepository } = require("./user.mongo.js");
+const { DynamoUserRepository } = require("./user.dynamodb.js");
 
-export function getUserRepository() {
+function userRepo() {
   const dbType = process.env.DB_TYPE || "mongo";
 
   if (dbType === "dynamo") {
@@ -10,3 +10,5 @@ export function getUserRepository() {
 
   return new MongoUserRepository();
 }
+
+module.exports = { userRepo };

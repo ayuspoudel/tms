@@ -12,10 +12,12 @@ function formatMessage(level, message, meta) {
   return meta ? `${base} ${JSON.stringify(meta)}` : base;
 }
 
-export const logger = {
+const logger = {
   debug: (msg, meta) => console.log(formatMessage(LEVELS.DEBUG, msg, meta)),
   info: (msg, meta) => console.log(formatMessage(LEVELS.INFO, msg, meta)),
   success: (msg, meta) => console.log(formatMessage(LEVELS.SUCCESS, msg, meta)),
   warn: (msg, meta) => console.warn(formatMessage(LEVELS.WARN, msg, meta)),
   error: (msg, meta) => console.error(formatMessage(LEVELS.ERROR, msg, meta)),
 };
+
+module.exports = { logger };

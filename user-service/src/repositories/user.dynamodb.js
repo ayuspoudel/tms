@@ -8,20 +8,20 @@
  *   - Sort Key: lastName (String)
  */
 
-import {
+const {
   DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
   DeleteItemCommand,
   QueryCommand,
-} from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { User } from "../domain/user.js";
+} = require("@aws-sdk/client-dynamodb");
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
+const { User } = require("../domain/user.js");
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 const TABLE = process.env.USER_TABLE || "Users";
 
-export class DynamoUserRepository {
+class DynamoUserRepository {
   async create(userData) {
     const user = new User(userData);
     await client.send(
@@ -82,3 +82,5 @@ export class DynamoUserRepository {
     return true;
   }
 }
+
+module.exports = { DynamoUserRepository };

@@ -1,6 +1,6 @@
-import {randomUUID} from 'crypto';
+const { randomUUID } = require('crypto');
 
-export class User{
+class User {
     constructor({
         id = randomUUID(),
         username = null,
@@ -8,7 +8,6 @@ export class User{
         firstName,
         lastName,
         displayName = null,
-
 
         passwordHash,
         role = "USER", // USER|ADMIN|MANAGER
@@ -41,36 +40,36 @@ export class User{
         this.profile = profile;
     }
 
-    safe(){
-        const {passwordHash, ...safeData} = this;
+    safe() {
+        const { passwordHash, ...safeData } = this;
         return safeData;
     }
 
-    markLoginSuccess(){
+    markLoginSuccess() {
         this.lastLoginAt = new Date().toISOString();
         this.failedLoginAttempts = 0;
         this.updatedAt = new Date().toISOString();
         this.lockedUntil = null;
     }
 
-    markLoginFailure(){
-        this.failedLoginAttempts +=1;
+    markLoginFailure() {
+        this.failedLoginAttempts += 1;
         this.updatedAt = new Date().toISOString();
-        if(this.failedLoginAttempts >=5){
-            this.lockedUntil = new Date(Date.now() + 15*60*1000).toISOString(); // basically lock account for 15 minutes
-    
+        if (this.failedLoginAttempts >= 5) {
+            this.lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // lock account for 15 minutes
         }
     }
 
-    verifyEmail(){
+    verifyEmail() {
         this.emailVerified = true;
         this.status = "ACTIVE";
         this.updatedAt = new Date().toISOString();
     }
 
-    updateProfile(updates){
-        this.profile = {...this.profile, ...updates};
+    updateProfile(updates) {
+        this.profile = { ...this.profile, ...updates };
         this.updatedAt = new Date().toISOString();
     }
-
 }
+
+module.exports = { User };
