@@ -1,4 +1,4 @@
-import { User } from "../src/domain/user.js";
+import { User } from "../../src/domain/user.js";
 
 describe("User Domain Model", () => {
   it("should create a user with defaults", () => {
