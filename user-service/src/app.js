@@ -1,28 +1,18 @@
-import express from "express";
-import { handler } from "./handlers/userHandler.js";
+const express = require("express");
+const authRoutes = require("./routes/auth.routes.js");
+const { errorHandler } = require("./middlewares/errorHandler.js");
 
-const app = express();
-app.use(express.json());
+function createApp() {
+  const app = express();
+  app.use(express.json());
 
-app.use(async (req, res) => {
-  const event = {
-    httpMethod: req.method,
-    path: req.path,
-    body: JSON.stringify(req.body),
-    headers: req.headers,
-    queryStringParameters: req.query,
-  };
+  // routes
+  app.use("/auth", authRoutes);
 
-  try {
-    const result = await handler(event, {}, () => {});
-    res.status(result.statusCode).json(JSON.parse(result.body));
-  } catch (err) {
-    console.error("Local handler error:", err);
-    res.status(500).json({ error: err.message || "Internal Server Error" });
-  }
-});
+  // error handler
+  app.use(errorHandler);
 
-const port = process.env.PORT || 4000;
-app.listen(port, () => {
-  console.log(`Local server running on http://localhost:${port}`);
-});
+  return app;
+}
+
+module.exports = { createApp };

@@ -1,11 +1,40 @@
-export function httpError(statusCode, message) {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
+class AppError extends Error {
+  constructor(message, statusCode = 400) {
+    super(message);
+    this.name = this.constructor.name;
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
 }
 
-export const BadRequest = (msg = 'Bad Request') => httpError(400, msg);
-export const Unauthorized = (msg = 'Unauthorized') => httpError(401, msg);
-export const NotFound = (msg = 'Not Found') => httpError(404, msg);
-export const Conflict = (msg = 'Conflict') => httpError(409, msg);
-export const InternalServerError = (msg = 'Internal Server Error') => httpError(500, msg);
+class ValidationError extends AppError {
+  constructor(message = "Validation failed") {
+    super(message, 400);
+  }
+}
+
+class NotFoundError extends AppError {
+  constructor(message = "Resource not found") {
+    super(message, 404);
+  }
+}
+
+class ConflictError extends AppError {
+  constructor(message = "Conflict") {
+    super(message, 409);
+  }
+}
+
+class UnauthorizedError extends AppError {
+  constructor(message = "Unauthorized") {
+    super(message, 401);
+  }
+}
+
+module.exports = {
+  AppError,
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+  UnauthorizedError,
+};

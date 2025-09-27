@@ -1,24 +1,35 @@
-import jwt from 'jsonwebtoken';
-import config from '../config/index.js'
+const jwt = require("jsonwebtoken");
 
-export function generateAccessToken(user){
-    const user_details = {
-        id: user.id,
-        email: user.email,
-        role: user.role || 'user'
-    }
-    const expire = {expiresIn: config.jwt.expiresIn};
+// Environment configs
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "accesssecret";
+const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refreshsecret";
 
-    return jwt.sign(user_details, config.jwt.secret, expire);
+const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_TTL || "15m";   // short-lived
+const REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_TTL || "7d"; // long-lived
+
+// Generate Access Token
+function generateAccessToken(payload) {
+  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: ACCESS_EXPIRES_IN });
 }
 
-export function generateRefreshToken(user){
-    const user_details = {id: user.id};
-    const expire = config.jwt.refreshExpiresIn
-
-    return jwt.sign(user_details, config.jwt.secret, expire);
+// Generate Refresh Token
+function generateRefreshToken(payload) {
+  return jwt.sign(payload, REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
 }
 
-export function verifyToken(token){
-    return jwt.verify(token, config.jwt.secret);
+// Verify Access Token
+function verifyAccessToken(token) {
+  return jwt.verify(token, ACCESS_SECRET);
 }
+
+// Verify Refresh Token
+function verifyRefreshToken(token) {
+  return jwt.verify(token, REFRESH_SECRET);
+}
+
+module.exports = {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+};
