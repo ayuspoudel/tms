@@ -1,12 +1,31 @@
 const express = require("express");
-const { signupController, findByRoleController, loginController, refreshController } = require("../controllers/auth.controller.js");
-const { ownerExistsController } = require("../controllers/auth.controller.js");
+const {
+  signupController,
+  findByRoleController,
+  loginController,
+  refreshController,
+  ownerExistsController,
+} = require("../controllers/auth.controller.js");
+
+const { authMiddleware, refreshMiddleware } = require("../middlewares/auth.middleware.js");
 
 const router = express.Router();
 
+// Public routes
 router.post("/signup", signupController);
 router.get("/owner-exists", ownerExistsController);
-router.get("/find-by-role", findByRoleController);
 router.post("/login", loginController);
-router.post("/refresh", refreshController);
+
+// Refresh route with refreshMiddleware
+router.post("/refresh", refreshMiddleware, refreshController);
+
+// Protected routes
+router.get("/find-by-role", authMiddleware, findByRoleController);
+router.get("/profile", authMiddleware, (req, res) => {
+  res.json({
+    message: "Protected profile data",
+    user: req.user,
+  });
+});
+
 module.exports = router;
