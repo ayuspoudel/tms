@@ -18,13 +18,13 @@
     "test:unit": "jest tests/domain tests/services --runInBand --detectOpenHandles",
     "test:integration": "jest tests/repositories --runInBand --detectOpenHandles"
   },
-  
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.896.0",
     "@aws-sdk/util-dynamodb": "^3.896.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.2"
   },
   "devDependencies": {

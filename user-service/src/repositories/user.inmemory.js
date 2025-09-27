@@ -22,6 +22,10 @@ class InMemoryUserRepository {
     return this.users.find((u) => u.id === id) || null;
   }
 
+  async findByRole(role){
+    return this.users.find((u) => u.role === role) || null;
+  }
+
   async update(id, updates) {
     const user = this.users.find((u) => u.id === id);
     if (!user) return null;

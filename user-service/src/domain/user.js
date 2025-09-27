@@ -10,7 +10,7 @@ class User {
         displayName = null,
 
         passwordHash,
-        role = "USER", // USER|ADMIN|MANAGER
+        role = "USER", // OWNER|USER|ADMIN|MANAGER
         status = "PENDING_VERIFICATION", //PENDING_VERIFICATION|ACTIVE|SUSPENDED
         emailVerified = false,
         lastLoginAt = null,

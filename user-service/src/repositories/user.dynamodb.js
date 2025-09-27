@@ -6,6 +6,8 @@
  * - GSI2: NameIndex
  *   - Partition Key: firstName (String)
  *   - Sort Key: lastName (String)
+ * - (Optional future) GSI3: RoleIndex
+ *   - Partition Key: role (String)
  */
 
 const {
@@ -14,6 +16,7 @@ const {
   GetItemCommand,
   DeleteItemCommand,
   QueryCommand,
+  ScanCommand,
 } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { User } = require("../domain/user.js");
@@ -66,6 +69,21 @@ class DynamoUserRepository {
         ExpressionAttributeValues: {
           ":firstName": { S: firstName },
           ":lastName": { S: lastName },
+        },
+      })
+    );
+    return Items ? Items.map((i) => new User(unmarshall(i))) : [];
+  }
+
+  async findByRole(role) {
+    // If you add a GSI on role, use Query instead of Scan
+    const { Items } = await client.send(
+      new ScanCommand({
+        TableName: TABLE,
+        FilterExpression: "#r = :role",
+        ExpressionAttributeNames: { "#r": "role" },
+        ExpressionAttributeValues: {
+          ":role": { S: role },
         },
       })
     );
