@@ -20,11 +20,12 @@ const {
 } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { User } = require("../../domain/user.js");
+const { UserRepository } = require("./_user.repository.js");
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 const TABLE = process.env.USER_TABLE || "Users";
 
-class DynamoUserRepository {
+class DynamoUserRepository extends UserRepository{
   async create(userData) {
     const user = new User(userData);
     await client.send(
@@ -87,6 +88,17 @@ class DynamoUserRepository {
         },
       })
     );
+    return Items ? Items.map((i) => new User(unmarshall(i))) : [];
+  }
+
+  async findAll(role) {
+    const params = { TableName: TABLE };
+    if (role) {
+      params.FilterExpression = "#r = :role";
+      params.ExpressionAttributeNames = { "#r": "role" };
+      params.ExpressionAttributeValues = { ":role": { S: role } };
+    }
+    const { Items } = await client.send(new ScanCommand(params));
     return Items ? Items.map((i) => new User(unmarshall(i))) : [];
   }
 

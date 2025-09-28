@@ -3,7 +3,8 @@ const { ownerExists } = require("../services/auth.service.js");
 const {findUserByRole} = require("../services/auth.service.js");
 const {login} = require("../services/auth.service.js");
 const { refresh } = require("../services/auth.service.js");
-const { logout } = require("../services/auth.service.js");
+const { logout, logoutAll } = require("../services/auth.service.js");
+
 async function findByRoleController(req, res, next){
     try{
         const {role} = req.query;
@@ -32,8 +33,6 @@ async function loginController(req,res, next){
         next(error);
     }
 }
-
-
 
 async function refreshController(req, res, next) {
   try {

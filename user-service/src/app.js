@@ -1,5 +1,6 @@
 const express = require("express");
 const authRoutes = require("./routes/auth.routes.js");
+const userMgmtRoutes = require("./routes/usermgmt.routes.js");
 const { errorHandler } = require("./middlewares/errorHandler.js");
 
 function createApp() {
@@ -8,6 +9,7 @@ function createApp() {
 
   // routes
   app.use("/auth", authRoutes);
+  app.use("/users", userMgmtRoutes);
 
   // error handler
   app.use(errorHandler);
