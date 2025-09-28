@@ -1,2 +1,2 @@
-const { InMemoryUserRepository } = require("../src/repositories/user.inmemory.js");
+const { InMemoryUserRepository } = require("../src/repositories/user/user.inmemory.js");
 module.exports = { InMemoryUserRepository };

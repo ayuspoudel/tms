@@ -1,5 +1,5 @@
-const { User } = require("../domain/user.js");
-const { UserModel } = require("../models/user.mongoose.js");
+const { User } = require("../../domain/user.js");
+const { UserModel } = require("../../models/user.mongoose.js");
 
 class MongoUserRepository {
   async create(userData) {

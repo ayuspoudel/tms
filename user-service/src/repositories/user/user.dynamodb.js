@@ -19,7 +19,7 @@ const {
   ScanCommand,
 } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
-const { User } = require("../domain/user.js");
+const { User } = require("../../domain/user.js");
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 const TABLE = process.env.USER_TABLE || "Users";

@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { MongoUserRepository } = require("../repositories/user.mongo.js");
+const { MongoUserRepository } = require("../repositories/user/user.mongo.js");
 const { UserTokenModel } = require("../models/userToken.mongoose.js");
 
 const userRepo = new MongoUserRepository();
