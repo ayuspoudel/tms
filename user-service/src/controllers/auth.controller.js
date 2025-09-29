@@ -3,6 +3,8 @@ const { ownerExists } = require("../services/auth.service.js");
 const {findUserByRole} = require("../services/auth.service.js");
 const {login} = require("../services/auth.service.js");
 const { refresh } = require("../services/auth.service.js");
+const { logout, logoutAll } = require("../services/auth.service.js");
+
 async function findByRoleController(req, res, next){
     try{
         const {role} = req.query;
@@ -32,17 +34,27 @@ async function loginController(req,res, next){
     }
 }
 
+async function refreshController(req, res) {
+  const { refreshToken } = req.body;
+  console.debug("[refreshController] Received refreshToken:", refreshToken);
 
-
-async function refreshController(req, res, next) {
   try {
-    const { refreshToken } = req.body;
-    const result = await refresh({ refreshToken });
-    res.json(result);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    console.debug("[refreshController] Refresh token valid for:", decoded.email);
+
+    const newAccessToken = generateAccessToken({
+      sub: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    });
+
+    res.json({ accessToken: newAccessToken });
   } catch (err) {
-    next(err);
+    console.error("[refreshController] Error verifying refresh token:", err.message);
+    return res.status(401).json({ message: "Invalid refresh token" });
   }
 }
+
 
 async function signupController(req, res, next){
     try{
@@ -53,4 +65,24 @@ async function signupController(req, res, next){
     }
 }
 
-module.exports = { signupController, ownerExistsController, findByRoleController, loginController, refreshController};
+async function logoutController(req, res, next){
+    try{
+        const result = await logout(req.body); 
+        res.json(result);}
+    catch (error){
+        next(error);
+    }
+}
+
+async function logoutAllController(req, res, next){
+    try{
+        const result = await logoutAll(req.body);
+        res.join(result);
+
+    }
+    catch (error){
+        next(error);;
+    }
+}
+
+module.exports = { signupController, ownerExistsController, findByRoleController, loginController, refreshController, logoutController, logoutAllController};

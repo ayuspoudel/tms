@@ -1,0 +1,31 @@
+{
+  "name": "connect-service",
+  "version": "1.0.0",
+  "description": "Integration service for AWS and GitHub connections",
+  "main": "./src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/app.js",
+    "dev": "nodemon ./src/app.js",
+    "test": "echo \"No tests defined yet\" && exit 0"
+  },
+  "keywords": [
+    "aws",
+    "github",
+    "integration",
+    "dynamodb",
+    "express"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.899.0",
+    "@aws-sdk/lib-dynamodb": "^3.899.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

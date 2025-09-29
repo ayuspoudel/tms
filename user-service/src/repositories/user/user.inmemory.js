@@ -1,4 +1,4 @@
-const { User } = require("../domain/user.js");
+const { User } = require("../../domain/user.js");
 
 class InMemoryUserRepository {
   constructor() {

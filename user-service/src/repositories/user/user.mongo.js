@@ -1,7 +1,7 @@
-const { User } = require("../domain/user.js");
-const { UserModel } = require("../models/user.mongoose.js");
-
-class MongoUserRepository {
+const { User } = require("../../domain/user.js");
+const { UserModel } = require("../../models/user.mongoose.js");
+const {UserRepository} = require("./_user.repository.js");
+class MongoUserRepository extends UserRepository{
   async create(userData) {
     const user = new User(userData);
     const doc = new UserModel(user);
@@ -22,6 +22,12 @@ class MongoUserRepository {
 
   async findByRole(role) {
     const docs = await UserModel.find({ role }).exec();
+    return docs ? docs.map((doc) => new User(doc.toObject())) : [];
+  }
+
+  async findAll(role){
+    const query = role ? {role}: {};
+    const docs = await UserModel.find(query).exec();
     return docs ? docs.map((doc) => new User(doc.toObject())) : [];
   }
 

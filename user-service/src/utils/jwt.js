@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-// Environment configs
+// Environment configs (fallback defaults for dev)
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "accesssecret";
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refreshsecret";
 

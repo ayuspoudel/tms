@@ -1,1 +1,5 @@
-module.exports = {...require('./signup.service'), ...require('./role.service'), ...require('./login.service'), ...require('./refresh.service')}
+module.exports = {...require('./signup.service'), 
+                  ...require('./role.service'), 
+                  ...require('./login.service'),
+                   ...require('./refresh.service'),
+                  ...require('./logout.service')}

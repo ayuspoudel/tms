@@ -1,20 +1,21 @@
 const bcrypt = require("bcryptjs");
 const { getUserRepository } = require("../repositories/user.repository.factory.js");
+const { getTokenRepository } = require("../repositories/token.repository.factory.js");
 const { ValidationError } = require("../utils/errors.js");
 const {
   generateAccessToken,
   generateRefreshToken,
 } = require("../utils/jwt.js");
-const { UserTokenModel } = require("../models/userToken.mongoose.js");
 
 async function login({ email, password }) {
-  const repo = getUserRepository();
+  const userRepo = getUserRepository();
+  const tokenRepo = getTokenRepository();
 
   if (!(email && password)) {
     throw new ValidationError("email and password are required.");
   }
 
-  const user = await repo.findByEmail(email);
+  const user = await userRepo.findByEmail(email);
   if (!user) {
     throw new ValidationError("Invalid email or password.");
   }
@@ -26,12 +27,12 @@ async function login({ email, password }) {
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
     user.markLoginFailure();
-    await repo.update(user.id, user);
+    await userRepo.update(user.id, user);
     throw new ValidationError("Invalid email or password.");
   }
 
   user.markLoginSuccess();
-  await repo.update(user.id, user);
+  await userRepo.update(user.id, user);
 
   const payload = {
     sub: user.id,
@@ -42,11 +43,12 @@ async function login({ email, password }) {
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  await UserTokenModel.create({
+  // Save refresh token using repository (Mongo or Dynamo)
+  await tokenRepo.create({
     userId: user.id,
     token: refreshToken,
     type: "REFRESH",
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
   });
 
   return {
