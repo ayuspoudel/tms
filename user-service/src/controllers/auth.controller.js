@@ -34,15 +34,27 @@ async function loginController(req,res, next){
     }
 }
 
-async function refreshController(req, res, next) {
+async function refreshController(req, res) {
+  const { refreshToken } = req.body;
+  console.debug("[refreshController] Received refreshToken:", refreshToken);
+
   try {
-    const { refreshToken } = req.body;
-    const result = await refresh({ refreshToken });
-    res.json(result);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    console.debug("[refreshController] Refresh token valid for:", decoded.email);
+
+    const newAccessToken = generateAccessToken({
+      sub: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    });
+
+    res.json({ accessToken: newAccessToken });
   } catch (err) {
-    next(err);
+    console.error("[refreshController] Error verifying refresh token:", err.message);
+    return res.status(401).json({ message: "Invalid refresh token" });
   }
 }
+
 
 async function signupController(req, res, next){
     try{
