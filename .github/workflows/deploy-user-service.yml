@@ -56,7 +56,7 @@ jobs:
           echo "Step 4: Uploading template to S3"
           aws s3 cp AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml \
             s3://tms-bootstrap-templates/tms-backend-account-bootstrap.yaml \
-            --acl private || {
+            --acl public-read || {
               echo "Upload failed"; exit 1;
             }
           echo "Template uploaded successfully"
