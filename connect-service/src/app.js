@@ -1,9 +1,8 @@
-// src/app.js
-
 import express from "express";
 import dotenv from "dotenv";
 import awsRoutes from "./routes/aws.routes.js";
 import { checkDynamoConnection } from "./config/db.check.js";
+import { checkBootstrapBucket } from "./config/s3.config.js";  
 
 dotenv.config();
 
@@ -23,4 +22,7 @@ app.listen(PORT, async () => {
 
   // Run DynamoDB check on startup
   await checkDynamoConnection();
+
+  // Run S3 bucket check on startup
+  await checkBootstrapBucket();
 });

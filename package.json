@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/ayuspoudel/tms/issues"
   },
-  "homepage": "https://github.com/ayuspoudel/tms#readme"
+  "homepage": "https://github.com/ayuspoudel/tms#readme",
+  "dependencies": {
+    "client-s3": "github:aws-sdk/client-s3"
+  }
 }
