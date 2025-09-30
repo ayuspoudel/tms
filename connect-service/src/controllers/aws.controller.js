@@ -1,10 +1,12 @@
-// src/controllers/aws.controller.js
-
 import {
   createAWSIntegration,
   listAWSIntegrations,
   getAWSIntegrationStatus,
   deleteAWSIntegration,
+  getAWSBootstrapLaunchUrl,
+  getAWSBootstrapTemplate,
+  getAWSBootstrapStackStatus,
+  testAssumeBackendRole,
 } from "../services/aws.service.js";
 
 /**
@@ -58,5 +60,62 @@ export const deleteAWS = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+};
+
+/**
+ * GET /connect/aws/bootstrap/link?saasAccountId=xxx&saasRoleName=xxx
+ */
+export const getAWSBootstrapLink = async (req, res) => {
+  try {
+    const { saasAccountId, saasRoleName } = req.query;
+    if (!saasAccountId || !saasRoleName) {
+      return res.status(400).json({ error: "saasAccountId and saasRoleName are required" });
+    }
+    const link = getAWSBootstrapLaunchUrl({ saasAccountId, saasRoleName });
+    res.json({ launchUrl: link });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * GET /connect/aws/bootstrap/template
+ */
+export const getAWSBootstrapTemplateCtrl = async (req, res) => {
+  try {
+    const content = await getAWSBootstrapTemplate();
+    res.type("text/yaml").send(content);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * GET /connect/aws/:id/bootstrap/status?tenantId=xxx
+ */
+export const getAWSBootstrapStatus = async (req, res) => {
+  try {
+    const { tenantId } = req.query;
+    const { id } = req.params;
+    const result = await getAWSBootstrapStackStatus({ tenantId, integrationId: id });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * GET /connect/aws/:id/assume?tenantId=xxx
+ * Try to assume the TMS-BackendRole for this integration
+ */
+export const assumeAWSRole = async (req, res) => {
+  try {
+    const { tenantId } = req.query;
+    const { id } = req.params;
+    const result = await testAssumeBackendRole({ tenantId, integrationId: id });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

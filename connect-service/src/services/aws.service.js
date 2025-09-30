@@ -1,16 +1,12 @@
 import { Integration } from "../domain/integration.js";
 import { getIntegrationRepository } from "../repositories/integration.repository.factory.js";
 import {
-  STSClient,
-  AssumeRoleCommand,
-} from "@aws-sdk/client-sts";
-import {
   CloudFormationClient,
-  CreateStackCommand,
-  UpdateStackCommand,
   DescribeStacksCommand,
 } from "@aws-sdk/client-cloudformation";
-import { getBootstrapTemplateUrl } from "../config/s3.config.js";
+import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
+import { getBootstrapTemplateUrl, s3Config } from "../config/s3.config.js";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const repo = getIntegrationRepository();
 
@@ -21,15 +17,15 @@ const STACK_NAME = "TMS-Backend-Bootstrap";
 /**
  * Create a new AWS integration
  */
-export const createAWSIntegration = async ({ tenantId, accountId, roleArn, region }) => {
-  if (!tenantId || !accountId || !roleArn || !region) {
-    throw new Error("Missing required fields: tenantId, accountId, roleArn, region");
+export const createAWSIntegration = async ({ tenantId, accountId, region }) => {
+  if (!tenantId || !accountId || !region) {
+    throw new Error("Missing required fields: tenantId, accountId, region");
   }
 
   const integration = new Integration({
     tenantId,
     provider: "aws",
-    config: { accountId, roleArn, region },
+    config: { accountId, region },
   });
 
   return await repo.create(integration);
@@ -62,101 +58,86 @@ export const deleteAWSIntegration = async ({ tenantId, id }) => {
 };
 
 /**
- * Apply the bootstrap CloudFormation stack (create or update)
+ * Get CloudFormation Launch URL for tenant to run bootstrap stack
  */
-export const applyAWSBootstrapStack = async ({ tenantId, integrationId }) => {
-  const integration = await getAWSIntegrationStatus({ tenantId, id: integrationId });
-  const { roleArn, region } = integration.config;
-
-  // AssumeRole
-  const sts = new STSClient({ region });
-  const { Credentials } = await sts.send(
-    new AssumeRoleCommand({
-      RoleArn: roleArn,
-      RoleSessionName: `tms-bootstrap-${tenantId}`,
-    })
-  );
-
-  const cf = new CloudFormationClient({
-    region,
-    credentials: {
-      accessKeyId: Credentials.AccessKeyId,
-      secretAccessKey: Credentials.SecretAccessKey,
-      sessionToken: Credentials.SessionToken,
-    },
-  });
-
-  try {
-    await cf.send(
-      new CreateStackCommand({
-        StackName: STACK_NAME,
-        TemplateURL: TEMPLATE_URL,
-        Capabilities: ["CAPABILITY_NAMED_IAM"],
-      })
-    );
-  } catch (err) {
-    if (err.name === "AlreadyExistsException") {
-      try {
-        await cf.send(
-          new UpdateStackCommand({
-            StackName: STACK_NAME,
-            TemplateURL: TEMPLATE_URL,
-            Capabilities: ["CAPABILITY_NAMED_IAM"],
-          })
-        );
-      } catch (updateErr) {
-        if (
-          updateErr.name === "ValidationError" &&
-          updateErr.message.includes("No updates")
-        ) {
-          // benign case
-          return { stackName: STACK_NAME, status: "NO_UPDATES" };
-        }
-        throw updateErr;
-      }
-    } else {
-      throw err;
-    }
-  }
-
-  return await getAWSBootstrapStackStatus({ cf });
+export const getAWSBootstrapLaunchUrl = ({ saasAccountId, saasRoleName }) => {
+  return `https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=${encodeURIComponent(
+    TEMPLATE_URL
+  )}&stackName=${STACK_NAME}&SaaSAccountId=${saasAccountId}&SaaSRoleName=${saasRoleName}`;
 };
 
 /**
- * Get bootstrap stack status (helper for polling)
+ * Get bootstrap template YAML contents from S3
  */
-export const getAWSBootstrapStackStatus = async ({ tenantId, integrationId, cf }) => {
-  let cloudFormation = cf;
+export const getAWSBootstrapTemplate = async (file = "tms-backend-account-bootstrap.yaml") => {
+  const { s3, bucket } = s3Config;
+  const command = new GetObjectCommand({ Bucket: bucket, Key: file });
+  const response = await s3.send(command);
+  return await streamToString(response.Body);
+};
 
-  if (!cloudFormation) {
-    const integration = await getAWSIntegrationStatus({ tenantId, id: integrationId });
-    const { roleArn, region } = integration.config;
+const streamToString = async (stream) => {
+  return await new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on("error", reject);
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+  });
+};
 
-    const sts = new STSClient({ region });
-    const { Credentials } = await sts.send(
-      new AssumeRoleCommand({
-        RoleArn: roleArn,
-        RoleSessionName: `tms-bootstrap-status-${tenantId}`,
-      })
+/**
+ * Get bootstrap stack status (self-hosted: no AssumeRole needed)
+ */
+export const getAWSBootstrapStackStatus = async ({ tenantId, integrationId }) => {
+  const integration = await getAWSIntegrationStatus({ tenantId, id: integrationId });
+  const { region } = integration.config;
+
+  const cloudFormation = new CloudFormationClient({ region });
+
+  try {
+    const { Stacks } = await cloudFormation.send(
+      new DescribeStacksCommand({ StackName: STACK_NAME })
     );
 
-    cloudFormation = new CloudFormationClient({
-      region,
-      credentials: {
-        accessKeyId: Credentials.AccessKeyId,
-        secretAccessKey: Credentials.SecretAccessKey,
-        sessionToken: Credentials.SessionToken,
-      },
-    });
+    return {
+      stackName: STACK_NAME,
+      status: Stacks?.[0]?.StackStatus || "UNKNOWN",
+      outputs: Stacks?.[0]?.Outputs || [],
+    };
+  } catch (err) {
+    return {
+      stackName: STACK_NAME,
+      status: "PENDING",
+      outputs: [],
+      error: err.message,
+    };
   }
+};
+/**
+ * Test assuming the backend role for an integration
+ */
+export const testAssumeBackendRole = async ({ tenantId, integrationId }) => {
+  const integration = await getAWSIntegrationStatus({ tenantId, id: integrationId });
+  const { accountId, region } = integration.config;
 
-  const { Stacks } = await cloudFormation.send(
-    new DescribeStacksCommand({ StackName: STACK_NAME })
+  const roleArn = `arn:aws:iam::${accountId}:role/TMS-BackendRole`;
+
+  const sts = new STSClient({ region });
+
+  const { Credentials, AssumedRoleUser } = await sts.send(
+    new AssumeRoleCommand({
+      RoleArn: roleArn,
+      RoleSessionName: `tms-assume-role-test-${tenantId}`,
+      DurationSeconds: 900, // 15 minutes
+    })
   );
 
   return {
-    stackName: STACK_NAME,
-    status: Stacks?.[0]?.StackStatus,
-    outputs: Stacks?.[0]?.Outputs || [],
+    roleArn,
+    assumedRoleUser: AssumedRoleUser,
+    credentials: {
+      accessKeyId: Credentials.AccessKeyId,
+      expiration: Credentials.Expiration,
+    },
   };
 };

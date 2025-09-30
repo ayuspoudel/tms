@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudformation": "^3.899.0",
     "client-s3": "github:aws-sdk/client-s3",
-    "client-sts": "github:aws-sdk/client-sts"
+    "client-sts": "github:aws-sdk/client-sts",
+    "cors": "^2.8.5"
   }
 }

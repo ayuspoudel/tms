@@ -13,19 +13,15 @@ async function refresh({ refreshToken }) {
 
   const tokenRepo = getTokenRepository();
 
-  // 1. Check if token exists in repo
   const stored = await tokenRepo.findByToken(refreshToken);
   if (!stored) {
     throw new ValidationError("Invalid refresh token");
   }
 
-  // 2. Verify JWT
   const decoded = verifyRefreshToken(refreshToken);
 
-  // 3. Delete old refresh token (rotation)
   await tokenRepo.deleteByToken(refreshToken);
 
-  // 4. Issue new tokens
   const payload = {
     sub: decoded.sub,
     email: decoded.email,

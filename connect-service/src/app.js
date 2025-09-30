@@ -3,11 +3,17 @@ import dotenv from "dotenv";
 import awsRoutes from "./routes/aws.routes.js";
 import { checkDynamoConnection } from "./config/db.check.js";
 import { checkBootstrapBucket } from "./config/s3.config.js";  
-
+import cors from "cors";
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // allow frontend
+    credentials: false,               // if you ever send cookies
+  })
+);
 
 // Health check
 app.get("/health", async (req, res) => {
@@ -28,6 +34,7 @@ app.use("/connect/aws", awsRoutes);
 
 // Start server
 const PORT = process.env.PORT || 4000;
+
 app.listen(PORT, async () => {
   console.log(`connect-service running on port ${PORT}`);
 
