@@ -11,7 +11,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
+              Service:  
                 - ec2.amazonaws.com
                 - ecs-tasks.amazonaws.com
                 - eks.amazonaws.com
