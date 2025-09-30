@@ -63,15 +63,32 @@ jobs:
             echo "Bucket already exists"
           fi
 
+          echo "Applying bucket policy for public read access"
+          cat > bucket-policy.json <<'EOF'
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadCFTemplate",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::tms-bootstrap-templates/*"
+              }
+            ]
+          }
+          EOF
+          aws s3api put-bucket-policy --bucket tms-bootstrap-templates --policy file://bucket-policy.json
+
       - name: Upload template to S3
         run: |
           echo "Step 4: Uploading template to S3"
           aws s3 cp AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml \
-            s3://tms-bootstrap-templates/tms-backend-account-bootstrap.yaml \
-            --acl public-read || {
+            s3://tms-bootstrap-templates/tms-backend-account-bootstrap.yaml || {
               echo "Upload failed"; exit 1;
             }
           echo "Template uploaded successfully"
+          echo "Public URL: https://tms-bootstrap-templates.s3.amazonaws.com/tms-backend-account-bootstrap.yaml"
 
       - name: Delete test stack
         if: always()
