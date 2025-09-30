@@ -4,8 +4,6 @@ on:
   push:
     paths:
       - 'AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml'
-    branches:
-      - main
 
 jobs:
   cf-pipeline:
