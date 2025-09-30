@@ -51,6 +51,18 @@ jobs:
           }
           echo "Test stack created successfully"
 
+      - name: Ensure S3 bucket exists
+        run: |
+          echo "Step 3.5: Ensuring S3 bucket exists"
+          if ! aws s3api head-bucket --bucket tms-bootstrap-templates 2>/dev/null; then
+            echo "Bucket does not exist. Creating..."
+            aws s3api create-bucket \
+              --bucket tms-bootstrap-templates \
+              --region us-east-1
+          else
+            echo "Bucket already exists"
+          fi
+
       - name: Upload template to S3
         run: |
           echo "Step 4: Uploading template to S3"
