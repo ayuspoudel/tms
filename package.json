@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/ayuspoudel/tms#readme",
   "dependencies": {
-    "client-s3": "github:aws-sdk/client-s3"
+    "@aws-sdk/client-cloudformation": "^3.899.0",
+    "client-s3": "github:aws-sdk/client-s3",
+    "client-sts": "github:aws-sdk/client-sts"
   }
 }

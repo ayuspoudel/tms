@@ -10,7 +10,18 @@ const app = express();
 app.use(express.json());
 
 // Health check
-app.get("/health", (req, res) => res.json({ status: "ok" }));
+app.get("/health", async (req, res) => {
+  const dynamoOk = await checkDynamoConnection();
+  const s3Ok = await checkBootstrapBucket();
+
+  const healthy = dynamoOk && s3Ok;
+
+  res.status(healthy ? 200 : 500).json({
+    status: healthy ? "ok" : "error",
+    dynamodb: dynamoOk ? "connected" : "unreachable",
+    s3Bucket: s3Ok ? "accessible" : "unreachable",
+  });
+});
 
 // Routes
 app.use("/connect/aws", awsRoutes);
