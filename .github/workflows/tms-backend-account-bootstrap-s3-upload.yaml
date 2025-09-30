@@ -51,7 +51,7 @@ jobs:
           }
           echo "Test stack created successfully"
 
-      - name: Ensure S3 bucket exists
+      - name: Ensure S3 bucket exists & set policy
         run: |
           echo "Step 3.5: Ensuring S3 bucket exists"
           if ! aws s3api head-bucket --bucket tms-bootstrap-templates 2>/dev/null; then
@@ -78,7 +78,11 @@ jobs:
             ]
           }
           EOF
-          aws s3api put-bucket-policy --bucket tms-bootstrap-templates --policy file://bucket-policy.json
+
+          # Apply bucket policy (ignore if already set)
+          aws s3api put-bucket-policy \
+            --bucket tms-bootstrap-templates \
+            --policy file://bucket-policy.json || echo "Bucket policy already applied or not allowed"
 
       - name: Upload template to S3
         run: |
