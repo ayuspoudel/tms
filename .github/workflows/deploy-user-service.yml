@@ -1,25 +1,22 @@
-name: Deploy Lambda to S3
+name: CloudFormation Template Pipeline
 
 on:
   push:
+    paths:
+      - 'AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml'
     branches:
-      - main   
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+      - main
 
+jobs:
+  cf-pipeline:
+    runs-on: ubuntu-latest
     permissions:
       id-token: write   # required for OIDC
-      contents: read    # required for actions/checkout
+      contents: read
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -27,20 +24,52 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
 
-      - name: Install dependencies
-        working-directory: user-service
-        run: npm ci --only=production
-
-      - name: Package Lambda
-        working-directory: user-service
+      - name: Validate CloudFormation template
         run: |
-          zip -r ../user-service.zip . \
-            -x "*.git*" \
-            -x "*.github*" \
-            -x "test/*" \
-            -x "node_modules/aws-sdk/*"
+          echo "Step 1: Validating CloudFormation template"
+          aws cloudformation validate-template \
+            --template-body file://AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml || {
+              echo "Validation failed"; exit 1;
+            }
+          echo "Validation passed"
 
-      - name: Upload to S3
+      - name: Create test stack
         run: |
-          aws s3 cp user-service.zip s3://tms-msdeploy-lambda-code-bucket-2f7e7c7/user-service-$(date +%Y%m%d%H%M%S).zip
-          aws s3 cp user-service.zip s3://tms-msdeploy-lambda-code-bucket-2f7e7c7/user-service-latest.zip
+          echo "Step 2: Creating test stack"
+          aws cloudformation create-stack \
+            --stack-name TMS-Bootstrap-Test \
+            --template-body file://AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml \
+            --capabilities CAPABILITY_NAMED_IAM || {
+              echo "Stack creation failed"; exit 1;
+            }
+
+      - name: Wait for test stack to complete
+        run: |
+          echo "Step 3: Waiting for stack to reach CREATE_COMPLETE"
+          aws cloudformation wait stack-create-complete --stack-name TMS-Bootstrap-Test || {
+            echo "Stack did not reach CREATE_COMPLETE"
+            aws cloudformation describe-stack-events --stack-name TMS-Bootstrap-Test
+            exit 1
+          }
+          echo "Test stack created successfully"
+
+      - name: Upload template to S3
+        run: |
+          echo "Step 4: Uploading template to S3"
+          aws s3 cp AWS-CloudFormation/connect-service/aws-account-bootstrap/tms-backend-account-bootstrap.yaml \
+            s3://tms-bootstrap-templates/tms-backend-account-bootstrap.yaml \
+            --acl private || {
+              echo "Upload failed"; exit 1;
+            }
+          echo "Template uploaded successfully"
+
+      - name: Delete test stack
+        if: always()
+        run: |
+          echo "Step 5: Deleting test stack"
+          aws cloudformation delete-stack --stack-name TMS-Bootstrap-Test
+          aws cloudformation wait stack-delete-complete --stack-name TMS-Bootstrap-Test || {
+            echo "Failed to delete test stack"
+            exit 1
+          }
+          echo "Test stack deleted successfully"
